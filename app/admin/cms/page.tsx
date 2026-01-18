@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { supabase } from '@/lib/database/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,8 +20,18 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 
+interface Announcement {
+    id: string
+    title: string
+    description: string
+    link?: string
+    image_url?: string
+    created_at: string
+    active: boolean
+}
+
 export default function CMSPage() {
-    const [news, setNews] = useState<any[]>([])
+    const [news, setNews] = useState<Announcement[]>([])
     const [title, setTitle] = useState('')
     const [desc, setDesc] = useState('')
     const [linkUrl, setLinkUrl] = useState('')
@@ -115,13 +125,15 @@ export default function CMSPage() {
                             transition: 'all 0.3s ease',
                             boxShadow: '0 2px 8px rgba(var(--primary-rgb), 0.1)'
                         }}
-                            onMouseEnter={(e) => {
+                            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                                 e.currentTarget.style.background = 'var(--primary)'
-                                e.currentTarget.querySelector('svg')!.style.color = 'white'
+                                const svg = e.currentTarget.querySelector('svg')
+                                if (svg) svg.style.color = 'white'
                             }}
-                            onMouseLeave={(e) => {
+                            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                                 e.currentTarget.style.background = 'white'
-                                e.currentTarget.querySelector('svg')!.style.color = 'var(--primary)'
+                                const svg = e.currentTarget.querySelector('svg')
+                                if (svg) svg.style.color = 'var(--primary)'
                             }}
                         >
                             <ArrowLeft size={22} color="var(--primary)" style={{ transition: 'all 0.3s ease' }} />
@@ -211,7 +223,7 @@ export default function CMSPage() {
                             <ItalianFormField
                                 label="Title"
                                 value={title}
-                                onChange={e => setTitle(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
                                 placeholder="e.g. Special Autumn Menu"
                                 required
                             />
@@ -230,7 +242,7 @@ export default function CMSPage() {
                                 </label>
                                 <textarea
                                     value={desc}
-                                    onChange={e => setDesc(e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDesc(e.target.value)}
                                     placeholder="Describe the event or announcement..."
                                     style={{
                                         width: '100%',
@@ -244,11 +256,11 @@ export default function CMSPage() {
                                         transition: 'all 0.3s ease',
                                         background: 'white'
                                     }}
-                                    onFocus={(e) => {
+                                    onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
                                         e.target.style.borderColor = 'var(--primary)'
                                         e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb), 0.08)'
                                     }}
-                                    onBlur={(e) => {
+                                    onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
                                         e.target.style.borderColor = 'rgba(var(--primary-rgb), 0.15)'
                                         e.target.style.boxShadow = 'none'
                                     }}
@@ -259,7 +271,7 @@ export default function CMSPage() {
                                 label="Image URL"
                                 icon={<Image size={16} />}
                                 value={imageUrl}
-                                onChange={e => setImageUrl(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setImageUrl(e.target.value)}
                                 placeholder="https://..."
                             />
 
@@ -296,7 +308,7 @@ export default function CMSPage() {
                                 label="Link (Optional)"
                                 icon={<LinkIcon size={16} />}
                                 value={linkUrl}
-                                onChange={e => setLinkUrl(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLinkUrl(e.target.value)}
                                 placeholder="https://..."
                             />
 
@@ -322,13 +334,13 @@ export default function CMSPage() {
                                     marginTop: '0.5rem',
                                     letterSpacing: '0.02em'
                                 }}
-                                onMouseEnter={(e) => {
+                                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                                     if (!loading && title) {
                                         e.currentTarget.style.transform = 'translateY(-2px)'
                                         e.currentTarget.style.boxShadow = '0 6px 24px rgba(var(--primary-rgb), 0.4)'
                                     }
                                 }}
-                                onMouseLeave={(e) => {
+                                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                                     e.currentTarget.style.transform = 'translateY(0)'
                                     e.currentTarget.style.boxShadow = '0 4px 16px rgba(var(--primary-rgb), 0.3)'
                                 }}
@@ -420,7 +432,7 @@ export default function CMSPage() {
     )
 }
 
-function ItalianFormField({ label, icon, ...props }: { [x: string]: any; label: any; icon?: any; }) {
+function ItalianFormField({ label, icon, ...props }: { label: React.ReactNode; icon?: React.ReactNode;[x: string]: any; }) {
     return (
         <div>
             <label style={{
@@ -449,11 +461,11 @@ function ItalianFormField({ label, icon, ...props }: { [x: string]: any; label: 
                     outline: 'none',
                     background: 'white',
                 }}
-                onFocus={(e) => {
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
                     e.target.style.borderColor = 'var(--primary)'
                     e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb), 0.08)'
                 }}
-                onBlur={(e) => {
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                     e.target.style.borderColor = 'rgba(var(--primary-rgb), 0.15)'
                     e.target.style.boxShadow = 'none'
                 }}
@@ -462,7 +474,7 @@ function ItalianFormField({ label, icon, ...props }: { [x: string]: any; label: 
     )
 }
 
-function ItalianAnnouncementCard({ item, onDelete }) {
+function ItalianAnnouncementCard({ item, onDelete }: { item: Announcement; onDelete: (id: string) => void }) {
     return (
         <div style={{
             background: 'white',
@@ -475,11 +487,11 @@ function ItalianAnnouncementCard({ item, onDelete }) {
             transition: 'all 0.4s ease',
             cursor: 'default'
         }}
-            onMouseEnter={(e) => {
+            onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
                 e.currentTarget.style.transform = 'translateY(-6px)'
                 e.currentTarget.style.boxShadow = '0 12px 32px rgba(var(--primary-rgb), 0.15)'
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = '0 4px 16px rgba(var(--primary-rgb), 0.08)'
             }}
@@ -537,12 +549,12 @@ function ItalianAnnouncementCard({ item, onDelete }) {
                             marginLeft: '16px',
                             flexShrink: 0
                         }}
-                        onMouseEnter={(e) => {
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.currentTarget.style.background = '#DC2626'
                             e.currentTarget.style.color = 'white'
                             e.currentTarget.style.transform = 'scale(1.05)'
                         }}
-                        onMouseLeave={(e) => {
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                             e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)'
                             e.currentTarget.style.color = '#DC2626'
                             e.currentTarget.style.transform = 'scale(1)'
@@ -602,11 +614,11 @@ function ItalianAnnouncementCard({ item, onDelete }) {
                                 textDecoration: 'none',
                                 transition: 'all 0.2s ease',
                             }}
-                            onMouseEnter={(e) => {
+                            onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
                                 e.currentTarget.style.color = 'var(--secondary)'
                                 e.currentTarget.style.gap = '10px'
                             }}
-                            onMouseLeave={(e) => {
+                            onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
                                 e.currentTarget.style.color = 'var(--primary)'
                                 e.currentTarget.style.gap = '7px'
                             }}
