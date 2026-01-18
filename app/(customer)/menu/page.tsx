@@ -16,7 +16,7 @@ export default function MenuPage() {
     const [categories, setCategories] = useState<any[]>([])
     const [items, setItems] = useState<any[]>([])
     const [specials, setSpecials] = useState<any[]>([])
-    const [activeCategory, setActiveCategory] = useState<string>('specials')
+    const [activeCategory, setActiveCategory] = useState<string>('all')
     const [searchQuery, setSearchQuery] = useState('')
     const [loading, setLoading] = useState(true)
     const { addToCart } = useCart()
@@ -37,11 +37,6 @@ export default function MenuPage() {
 
             if (catRes.data) {
                 setCategories(catRes.data)
-                // If there's a category named "Today's Specials", we can use its ID
-                const specCat = catRes.data.find((c: any) => c.name === "Today's Specials")
-                if (specCat && activeCategory === 'specials') {
-                    setActiveCategory(specCat.id)
-                }
             }
             if (itemRes.data) setItems(itemRes.data)
             if (specialRes.data) {
@@ -140,7 +135,6 @@ export default function MenuPage() {
                     placeholder="What are you craving?"
                     value={searchQuery}
                     onSearch={setSearchQuery}
-                    style={{ marginBottom: 'var(--space-4)' }}
                 />
 
                 <div style={{
@@ -149,7 +143,8 @@ export default function MenuPage() {
                     overflowX: 'auto',
                     paddingBottom: 'var(--space-4)',
                     scrollbarWidth: 'none',
-                    msOverflowStyle: 'none'
+                    msOverflowStyle: 'none',
+                    paddingTop: 'var(--space-4)'
                 }}>
                     <CategoryBadge
                         name="All"

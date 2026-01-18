@@ -32,7 +32,7 @@ export default function LoginPage() {
     }
 
     const handleGuest = () => {
-        router.push('/guest/menu')
+        router.push('/guest/home')
     }
 
     const handleSignup = () => {
@@ -135,7 +135,7 @@ export default function LoginPage() {
                     <div className={styles.grid}>
                         <button className={styles.roleCard} onClick={() => handleRoleSelect('student')}>
                             <User size={48} className={styles.icon} />
-                            <span>Student Login</span>
+                            <span>Rider Login</span>
                         </button>
 
                         <button className={styles.roleCard} onClick={handleGuest}>
@@ -179,8 +179,15 @@ export default function LoginPage() {
                             type="tel"
                             placeholder="1234567890"
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value
+                                const numeric = val.replace(/\D/g, '')
+                                const sanitized = numeric.startsWith('0') ? numeric.slice(1) : numeric
+                                const truncated = sanitized.slice(0, 10)
+                                setPhone(truncated)
+                            }}
                             required
+                            maxLength={10}
                         />
 
                         <div>
@@ -199,7 +206,7 @@ export default function LoginPage() {
                                     backgroundColor: 'var(--surface)'
                                 }}
                             >
-                                <option value="student">Student</option>
+                                <option value="student">Rider</option>
                                 <option value="staff">Staff</option>
                                 <option value="kitchen_manager">Kitchen Manager</option>
                             </select>
@@ -218,11 +225,17 @@ export default function LoginPage() {
                         <Input
                             label="Create PIN (6 digits)"
                             type="password"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             placeholder="123456"
                             value={pin}
-                            onChange={(e) => setPin(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '')
+                                setPin(val.slice(0, 6))
+                            }}
                             required
                             minLength={6}
+                            maxLength={6}
                         />
 
                         {error && <div className={styles.error}>{error}</div>}
@@ -249,7 +262,7 @@ export default function LoginPage() {
                 <button onClick={() => setView('select')} className={styles.backButton}>← Back</button>
 
                 <h1 className={styles.title}>
-                    {loginRole === 'student' ? 'Student Portal' : 'Staff Portal'}
+                    {loginRole === 'student' ? 'Rider Portal' : 'Staff Portal'}
                 </h1>
                 <p className={styles.subtitle}>Enter your credentials</p>
 
@@ -259,17 +272,30 @@ export default function LoginPage() {
                         type="tel"
                         placeholder="1234567890"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value
+                            const numeric = val.replace(/\D/g, '')
+                            const sanitized = numeric.startsWith('0') ? numeric.slice(1) : numeric
+                            const truncated = sanitized.slice(0, 10)
+                            setPhone(truncated)
+                        }}
                         required
+                        maxLength={10}
                     />
                     <Input
                         label="PIN"
                         type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         placeholder="******"
                         value={pin}
-                        onChange={(e) => setPin(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '')
+                            setPin(val.slice(0, 6))
+                        }}
                         required
                         minLength={6}
+                        maxLength={6}
                     />
 
                     {error && <div className={styles.error}>{error}</div>}

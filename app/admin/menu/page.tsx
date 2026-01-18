@@ -35,9 +35,15 @@ export default function AdminMenuPage() {
     const [available, setAvailable] = useState(true)
     const [loading, setLoading] = useState(false)
     const [dataLoading, setDataLoading] = useState(true)
+    const [isMobile, setIsMobile] = useState(false)
 
     useEffect(() => {
         fetchData()
+
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
     async function fetchData() {
@@ -135,7 +141,13 @@ export default function AdminMenuPage() {
     if (dataLoading) return <Loading />
 
     return (
-        <div className="container" style={{ paddingBottom: 'var(--space-12)' }}>
+        <div className="container" style={{
+            paddingBottom: 'var(--space-12)',
+            paddingLeft: 'var(--space-4)',
+            paddingRight: 'var(--space-4)',
+            maxWidth: '1400px',
+            margin: '0 auto'
+        }}>
             {/* Header */}
             <div style={{ marginBottom: 'var(--space-10)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', paddingTop: 'var(--space-6)' }}>
                 <Link href="/admin">
@@ -149,7 +161,12 @@ export default function AdminMenuPage() {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 'var(--space-8)', alignItems: 'start' }}>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1.5fr',
+                gap: 'var(--space-8)',
+                alignItems: 'start'
+            }}>
                 {/* Editor Sidebar */}
                 <div style={{
                     background: 'var(--surface)',
@@ -157,8 +174,9 @@ export default function AdminMenuPage() {
                     borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--border)',
                     boxShadow: 'var(--shadow-md)',
-                    position: 'sticky',
-                    top: 'var(--space-6)'
+                    position: isMobile ? 'static' : 'sticky',
+                    top: 'var(--space-6)',
+                    marginBottom: isMobile ? 'var(--space-8)' : 0
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
                         <div style={{
@@ -205,7 +223,7 @@ export default function AdminMenuPage() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                             <Input
-                                label="Price ($)"
+                                label="Price (₹)"
                                 type="number"
                                 step="0.01"
                                 value={price}
@@ -420,7 +438,7 @@ export default function AdminMenuPage() {
                                             )}
                                         </div>
                                         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {item.category?.name} • <span style={{ fontWeight: 700, color: 'var(--primary)' }}>${item.price.toFixed(2)}</span>
+                                            {item.category?.name} • <span style={{ fontWeight: 700, color: 'var(--primary)' }}>₹{item.price.toFixed(2)}</span>
                                         </p>
                                     </div>
 

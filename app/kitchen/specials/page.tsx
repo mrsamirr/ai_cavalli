@@ -163,7 +163,7 @@ export default function KitchenSpecialsPage() {
                             >
                                 <option value="">Select an item...</option>
                                 {items.map(item => (
-                                    <option key={item.id} value={item.id}>{item.name} (${item.price})</option>
+                                    <option key={item.id} value={item.id}>{item.name} (₹{item.price})</option>
                                 ))}
                             </select>
                         </div>
@@ -186,7 +186,7 @@ export default function KitchenSpecialsPage() {
                     <form onSubmit={handleQuickCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                             <Input label="Dish Name" placeholder="e.g. Eggs Benedict" value={newName} onChange={e => setNewName(e.target.value)} required />
-                            <Input label="Price ($)" type="number" step="0.01" value={newPrice} onChange={e => setNewPrice(e.target.value)} required />
+                            <Input label="Price (₹)" type="number" step="0.01" value={newPrice} onChange={e => setNewPrice(e.target.value)} required />
                         </div>
 
                         <Input label="Description" placeholder="Optional details about the dish..." value={newDescription} onChange={e => setNewDescription(e.target.value)} />

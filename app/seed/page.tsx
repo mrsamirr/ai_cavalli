@@ -162,7 +162,7 @@ export default function SeedPage() {
                                 onChange={e => setRole(e.target.value)}
                                 style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
                             >
-                                <option value="student">Student</option>
+                                <option value="student">Rider</option>
                                 <option value="staff">Staff</option>
                                 <option value="kitchen_manager">Kitchen Manager</option>
                                 <option value="admin">Admin</option>

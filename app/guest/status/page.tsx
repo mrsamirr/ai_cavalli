@@ -11,10 +11,14 @@ function GuestOrderContent() {
     const searchParams = useSearchParams()
     const orderId = searchParams.get('orderId')
     const [order, setOrder] = useState<any>(null)
+    const [recentOrders, setRecentOrders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     const fetchStatus = async () => {
-        if (!orderId) return
+        if (!orderId) {
+            setLoading(false)
+            return
+        }
         const { data } = await supabase
             .from('orders')
             .select(`
@@ -30,6 +34,20 @@ function GuestOrderContent() {
             .single()
 
         if (data) setOrder(data)
+
+        // Fetch recent orders for this guest phone
+        const guestPhone = localStorage.getItem('guest_phone')
+        if (guestPhone) {
+            const { data: others } = await supabase
+                .from('orders')
+                .select('id, status, total, created_at')
+                .contains('guest_info', { phone: guestPhone })
+                .order('created_at', { ascending: false })
+                .limit(10)
+
+            if (others) setRecentOrders(others)
+        }
+
         setLoading(false)
     }
 
@@ -117,9 +135,13 @@ function GuestOrderContent() {
                         <span style={{ fontSize: '0.8rem', color: '#666' }}>Order ID:</span>
                         <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{orderId.slice(0, 8)}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                         <span style={{ fontSize: '0.8rem', color: '#666' }}>Table/Room:</span>
                         <span style={{ fontWeight: 600 }}>{order?.table_name}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#666' }}>Guests:</span>
+                        <span style={{ fontWeight: 600 }}>{order?.num_guests || 1}</span>
                     </div>
 
                     <div style={{ borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
@@ -128,13 +150,13 @@ function GuestOrderContent() {
                             {order?.items?.map((item: any) => (
                                 <li key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
                                     <span>{item.quantity}x {item.menu_item?.name}</span>
-                                    <span>${(item.quantity * item.price).toFixed(2)}</span>
+                                    <span>₹{(item.quantity * item.price).toFixed(2)}</span>
                                 </li>
                             ))}
                         </ul>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontWeight: 'bold', borderTop: '1px dashed #ccc', paddingTop: '0.5rem' }}>
                             <span>Total</span>
-                            <span>${order?.total?.toFixed(2)}</span>
+                            <span>₹{order?.total?.toFixed(2)}</span>
                         </div>
                     </div>
                 </div>
@@ -146,6 +168,46 @@ function GuestOrderContent() {
                 {order?.status === 'ready' && "Your order is READY! Please collect it or wait for staff delivery."}
                 {order?.status === 'completed' && "This order has been fulfilled. We hope you enjoyed it!"}
             </p>
+
+            {recentOrders.length > 1 && (
+                <div style={{ textAlign: 'left', marginTop: '3rem' }}>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Orders</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {recentOrders.map(prev => (
+                            <Link
+                                key={prev.id}
+                                href={`/guest/status?orderId=${prev.id}`}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '1rem',
+                                    background: prev.id === orderId ? 'rgba(var(--primary-rgb), 0.05)' : 'white',
+                                    borderRadius: 'var(--radius)',
+                                    border: prev.id === orderId ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                    transition: '0.2s'
+                                }}
+                            >
+                                <div>
+                                    <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>#{prev.id.slice(0, 8).toUpperCase()}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(prev.created_at).toLocaleDateString()}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.9rem' }}>₹{prev.total.toFixed(2)}</div>
+                                    <div style={{
+                                        fontSize: '0.7rem',
+                                        textTransform: 'uppercase',
+                                        fontWeight: 700,
+                                        color: prev.status === 'ready' ? '#15803d' : '#64748b'
+                                    }}>{prev.status}</div>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <Link href="/guest/menu">
                 <Button variant="outline" style={{ width: '100%' }}>Order More</Button>

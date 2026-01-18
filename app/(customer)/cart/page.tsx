@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/context/CartContext'
 import { useAuth } from '@/lib/auth/context'
@@ -20,8 +20,36 @@ export default function CartPage() {
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
     const [tableName, setTableName] = useState('')
+    const [numGuests, setNumGuests] = useState('1')
+    const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>('indoor')
     const [readyIn, setReadyIn] = useState('15')
     const [notes, setNotes] = useState('')
+
+    // Load guest info from localStorage on mount
+    useEffect(() => {
+        if (!user) {
+            const savedName = localStorage.getItem('guest_name')
+            const savedPhone = localStorage.getItem('guest_phone')
+            if (savedName) setName(savedName)
+            if (savedPhone) setPhone(savedPhone)
+        }
+    }, [user])
+
+    // Save guest info to localStorage when changed
+    const handleNameChange = (val: string) => {
+        setName(val)
+        if (!user) localStorage.setItem('guest_name', val)
+    }
+
+    const handlePhoneChange = (val: string) => {
+        // Numeric only and max 10 digits
+        const numeric = val.replace(/\D/g, '')
+        const sanitized = numeric.startsWith('0') ? numeric.slice(1) : numeric
+        const truncated = sanitized.slice(0, 10)
+
+        setPhone(truncated)
+        if (!user) localStorage.setItem('guest_phone', truncated)
+    }
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -42,6 +70,8 @@ export default function CartPage() {
                     user_id: user?.id || null,
                     guest_info: guestInfo,
                     table_name: tableName,
+                    location_type: locationType,
+                    num_guests: parseInt(numGuests) || 1,
                     status: 'pending',
                     total: total,
                     ready_in_minutes: parseInt(readyIn),
@@ -159,7 +189,7 @@ export default function CartPage() {
                                 }}>
                                     <div style={{ flex: 1 }}>
                                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '2px' }}>{item.name}</h3>
-                                        <p style={{ color: 'var(--primary)', fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</p>
+                                        <p style={{ color: 'var(--primary)', fontWeight: 700 }}>₹{(item.price * item.quantity).toFixed(2)}</p>
                                     </div>
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
@@ -242,7 +272,7 @@ export default function CartPage() {
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-6)', padding: 'var(--space-4)', background: 'var(--background)', borderRadius: 'var(--radius)' }}>
                             <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Total Amount</span>
-                            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>${total.toFixed(2)}</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>₹{total.toFixed(2)}</span>
                         </div>
 
                         <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -254,7 +284,7 @@ export default function CartPage() {
                                         placeholder="Your name"
                                         required
                                         value={name}
-                                        onChange={e => setName(e.target.value)}
+                                        onChange={e => handleNameChange(e.target.value)}
                                     />
                                     <Input
                                         label="Phone Number"
@@ -262,40 +292,82 @@ export default function CartPage() {
                                         type="tel"
                                         required
                                         value={phone}
-                                        onChange={e => setPhone(e.target.value)}
+                                        onChange={e => handlePhoneChange(e.target.value)}
+                                        maxLength={10}
                                     />
                                 </div>
                             )}
+                            <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontWeight: 600 }}>
+                                    <input
+                                        type="radio"
+                                        name="locationType"
+                                        checked={locationType === 'indoor'}
+                                        onChange={() => setLocationType('indoor')}
+                                        style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }}
+                                    />
+                                    Indoor
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontWeight: 600 }}>
+                                    <input
+                                        type="radio"
+                                        name="locationType"
+                                        checked={locationType === 'outdoor'}
+                                        onChange={() => setLocationType('outdoor')}
+                                        style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }}
+                                    />
+                                    Outdoor
+                                </label>
+                            </div>
+
                             <Input
                                 label="Table / Room Number"
-                                placeholder="e.g. Table 5"
+                                placeholder="e.g. 5"
+                                type="number"
+                                pattern="[0-9]*"
+                                inputMode="numeric"
                                 required
                                 value={tableName}
                                 onChange={e => setTableName(e.target.value)}
                             />
 
+                            <Input
+                                label="Number of Guests"
+                                type="number"
+                                min="1"
+                                required
+                                value={numGuests}
+                                onChange={e => setNumGuests(e.target.value)}
+                            />
+
                             <div style={{ marginBottom: 'var(--space-2)' }}>
                                 <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>When would you like it?</label>
-                                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                    {['15', '30', '60'].map(min => (
+                                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                                    {[
+                                        { label: 'Now', value: '0' },
+                                        { label: '15m', value: '15' },
+                                        { label: '30m', value: '30' },
+                                        { label: '1h', value: '60' }
+                                    ].map(option => (
                                         <button
-                                            key={min}
+                                            key={option.value}
                                             type="button"
-                                            onClick={() => setReadyIn(min)}
+                                            onClick={() => setReadyIn(option.value)}
                                             style={{
                                                 flex: 1,
+                                                minWidth: '70px',
                                                 padding: 'var(--space-3)',
                                                 borderRadius: 'var(--radius-sm)',
-                                                border: readyIn === min ? '2px solid var(--primary)' : '1px solid var(--border)',
-                                                background: readyIn === min ? 'rgba(var(--primary-rgb), 0.05)' : 'white',
-                                                color: readyIn === min ? 'var(--primary)' : 'var(--text-muted)',
+                                                border: readyIn === option.value ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                                background: readyIn === option.value ? 'rgba(var(--primary-rgb), 0.05)' : 'white',
+                                                color: readyIn === option.value ? 'var(--primary)' : 'var(--text-muted)',
                                                 fontWeight: 700,
                                                 fontSize: '0.875rem',
                                                 cursor: 'pointer',
                                                 transition: 'var(--transition)'
                                             }}
                                         >
-                                            {min}m
+                                            {option.label}
                                         </button>
                                     ))}
                                 </div>

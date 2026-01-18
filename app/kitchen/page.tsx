@@ -5,7 +5,24 @@ import { supabase } from '@/lib/database/supabase'
 import { useAuth } from '@/lib/auth/context'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ChevronRight, LogOut, Sparkles, Volume2, History, LayoutDashboard, User, Shield, Info } from 'lucide-react'
+import {
+    ChevronRight,
+    LogOut,
+    Sparkles,
+    Volume2,
+    History,
+    LayoutDashboard,
+    User,
+    Shield,
+    Info,
+    Download,
+    Settings,
+    Users,
+    Bell,
+    CheckCircle2,
+    Clock,
+    ShoppingBag
+} from 'lucide-react'
 import { Loading } from '@/components/ui/Loading'
 
 interface Order {
@@ -17,13 +34,15 @@ interface Order {
     total: number
     discount_amount: number
     ready_in_minutes: number
+    num_guests: number | null
     notes: string | null
+    location_type: 'indoor' | 'outdoor' | null
     created_at: string
     items?: any[]
     user?: { role: string, name: string, phone: string } | null
 }
 
-type FilterType = 'all' | 'student' | 'staff' | 'guest'
+type FilterType = 'all' | 'rider' | 'staff' | 'guest'
 
 export default function KitchenPage() {
     const [orders, setOrders] = useState<Order[]>([])
@@ -117,7 +136,7 @@ export default function KitchenPage() {
         if (filter === 'all') return orders
         return orders.filter(order => {
             if (filter === 'guest') return order.guest_info !== null
-            if (filter === 'student') return order.user_id !== null && order.user?.role === 'student'
+            if (filter === 'rider') return order.user_id !== null && order.user?.role === 'student'
             if (filter === 'staff') return order.user_id !== null && order.user?.role === 'staff'
             return true
         })
@@ -151,7 +170,7 @@ export default function KitchenPage() {
 
     const getOrderTypeBadge = (order: Order) => {
         if (order.guest_info) return { label: 'GUEST', color: '#9333ea', icon: User }
-        if (order.user?.role === 'student') return { label: 'STUDENT', color: '#2563eb', icon: LayoutDashboard }
+        if (order.user?.role === 'student') return { label: 'RIDER', color: '#2563eb', icon: LayoutDashboard }
         if (order.user?.role === 'staff') return { label: 'STAFF', color: '#059669', icon: Shield }
         return { label: 'UNKNOWN', color: '#6b7280', icon: Info }
     }
@@ -273,7 +292,7 @@ export default function KitchenPage() {
 
                 {!showCompleted && (
                     <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                        {(['all', 'student', 'staff', 'guest'] as FilterType[]).map(f => (
+                        {(['all', 'rider', 'staff', 'guest'] as FilterType[]).map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
@@ -346,10 +365,26 @@ export default function KitchenPage() {
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>
-                                            {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                        <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>#{order.id.slice(0, 6).toUpperCase()}</p>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                                            <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>
+                                                {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                            <div style={{
+                                                fontSize: '0.75rem',
+                                                fontWeight: 800,
+                                                color: 'var(--primary)',
+                                                background: 'rgba(var(--primary-rgb), 0.1)',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}>
+                                                <Clock size={10} />
+                                                <span>{order.ready_in_minutes} MIN SLOT</span>
+                                            </div>
+                                        </div>
+                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>ORDER #{order.id.slice(0, 6).toUpperCase()}</p>
                                     </div>
                                 </div>
 
@@ -381,25 +416,45 @@ export default function KitchenPage() {
                                         </div>
                                     )}
 
-                                    <div style={{ marginBottom: 'var(--space-4)', fontSize: '0.875rem' }}>
-                                        <span style={{ color: 'var(--text-muted)' }}>Order for: </span>
-                                        <span style={{ fontWeight: 700 }}>{order.guest_info?.name || order.user?.name || 'Walk-in'}</span>
+                                    <div style={{ marginBottom: 'var(--space-4)', fontSize: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                        <div>
+                                            <span style={{ color: 'var(--text-muted)' }}>Order for: </span>
+                                            <span style={{ fontWeight: 700 }}>{order.guest_info?.name || order.user?.name || 'Walk-in'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                            {order.location_type && (
+                                                <div style={{
+                                                    background: order.location_type === 'outdoor' ? '#FEF3C7' : '#DBEAFE',
+                                                    color: order.location_type === 'outdoor' ? '#92400E' : '#1E40AF',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '12px',
+                                                    fontWeight: 800,
+                                                    fontSize: '0.7rem',
+                                                    textTransform: 'uppercase'
+                                                }}>
+                                                    {order.location_type}
+                                                </div>
+                                            )}
+                                            <div style={{ background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 800, fontSize: '0.75rem' }}>
+                                                {order.num_guests || 1} GUESTS
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid var(--border-light)', paddingTop: 'var(--space-3)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                                             <span>Original Amount</span>
-                                            <span>${order.total.toFixed(2)}</span>
+                                            <span>₹{order.total.toFixed(2)}</span>
                                         </div>
                                         {order.discount_amount > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#DC2626', fontWeight: 600 }}>
-                                                <span>Staff/Student Discount</span>
-                                                <span>-${order.discount_amount.toFixed(2)}</span>
+                                                <span>Staff/Rider Discount</span>
+                                                <span>-₹{order.discount_amount.toFixed(2)}</span>
                                             </div>
                                         )}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', fontWeight: 800, marginTop: '2px' }}>
                                             <span>Final Total</span>
-                                            <span style={{ color: 'var(--primary)' }}>${(order.total - (order.discount_amount || 0)).toFixed(2)}</span>
+                                            <span style={{ color: 'var(--primary)' }}>₹{(order.total - (order.discount_amount || 0)).toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>

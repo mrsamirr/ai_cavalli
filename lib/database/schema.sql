@@ -98,7 +98,6 @@ create policy "Public Read Categories" on public.categories for select using (tr
 create policy "Public Read Specials" on public.daily_specials for select using (true);
 create policy "Public Read Announcements" on public.announcements for select using (true);
 
--- Staff Menu management
 create policy "Staff manage menu items" on public.menu_items for all
   using (
     exists (
@@ -116,6 +115,23 @@ create policy "Staff manage menu items" on public.menu_items for all
   );
 
 create policy "Staff manage categories" on public.categories for all
+  using (
+    exists (
+      select 1 from public.users 
+      where id = auth.uid() 
+      and role in ('kitchen_manager', 'admin', 'staff')
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.users 
+      where id = auth.uid() 
+      and role in ('kitchen_manager', 'admin', 'staff')
+    )
+  );
+
+-- CMS Policies
+create policy "Staff manage announcements" on public.announcements for all
   using (
     exists (
       select 1 from public.users 

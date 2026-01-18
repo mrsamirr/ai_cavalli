@@ -8,13 +8,15 @@ import { Loading } from '@/components/ui/Loading'
 import {
     Trash2,
     Plus,
-    Image as ImageIcon,
+    Image,
     ArrowLeft,
-    Megaphone,
+    Bell,
     Calendar,
     Link as LinkIcon,
-    X,
-    Sparkles
+    Sparkles,
+    ExternalLink,
+    ChefHat,
+    Utensils
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -22,13 +24,18 @@ export default function CMSPage() {
     const [news, setNews] = useState<any[]>([])
     const [title, setTitle] = useState('')
     const [desc, setDesc] = useState('')
-    const [link, setLink] = useState('')
+    const [linkUrl, setLinkUrl] = useState('')
     const [imageUrl, setImageUrl] = useState('')
     const [loading, setLoading] = useState(false)
     const [dataLoading, setDataLoading] = useState(true)
+    const [isMobile, setIsMobile] = useState(false)
 
     useEffect(() => {
         fetchNews()
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024)
+        checkMobile()
+        window.addEventListener('resize', checkMobile)
+        return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
     async function fetchNews() {
@@ -45,216 +52,568 @@ export default function CMSPage() {
         const { error } = await supabase.from('announcements').insert({
             title,
             description: desc,
-            link,
-            image_url: imageUrl
+            link: linkUrl,
+            image_url: imageUrl,
+            active: true
         })
 
         if (!error) {
             setTitle('')
             setDesc('')
-            setLink('')
+            setLinkUrl('')
             setImageUrl('')
             fetchNews()
         } else {
-            alert('Error adding news')
+            alert(`Error adding news: ${error.message}`)
         }
         setLoading(false)
     }
 
     async function handleDelete(id: string) {
         if (!confirm('Are you sure you want to delete this announcement?')) return
-        await supabase.from('announcements').delete().eq('id', id)
-        fetchNews()
+        const { error } = await supabase.from('announcements').delete().eq('id', id)
+        if (!error) {
+            fetchNews()
+        } else {
+            alert(`Error deleting news: ${error.message}`)
+        }
     }
 
     if (dataLoading) return <Loading />
 
     return (
-        <div className="container" style={{ paddingBottom: 'var(--space-12)' }}>
-            {/* Header */}
-            <div style={{ marginBottom: 'var(--space-10)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', paddingTop: 'var(--space-6)' }}>
-                <Link href="/admin">
-                    <Button variant="ghost" size="sm" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
-                        <ArrowLeft size={20} />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 style={{ fontSize: '2.5rem', fontFamily: 'var(--font-serif)', margin: 0, color: 'var(--text)' }}>Bulletin CMS</h1>
-                    <p style={{ color: 'var(--text-muted)', margin: 0 }}>Manage news, events, and announcements</p>
-                </div>
-            </div>
+        <div style={{
+            minHeight: '100vh',
+            background: 'rgb(245,245,245)',
+            padding: 'clamp(1rem, 3vw, 2.5rem)',
+        }}>
+            <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: 'radial-gradient(circle at 20px 20px, rgba(var(--primary-rgb), 0.03) 1px, transparent 0)',
+                backgroundSize: '40px 40px',
+                pointerEvents: 'none',
+                zIndex: 0
+            }} />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 400px) 1fr', gap: 'var(--space-8)', alignItems: 'start' }}>
-                {/* Creator Section */}
-                <div style={{
-                    background: 'var(--surface)',
-                    padding: 'var(--space-8)',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--border)',
-                    boxShadow: 'var(--shadow-md)',
-                    position: 'sticky',
-                    top: 'var(--space-6)'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'var(--primary)',
+            <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+                <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                    <Link href="/admin" style={{ textDecoration: 'none' }}>
+                        <button style={{
+                            width: '52px',
+                            height: '52px',
+                            borderRadius: '50%',
+                            border: '2px solid var(--primary)',
+                            background: 'white',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            color: 'white'
-                        }}>
-                            <Megaphone size={16} />
-                        </div>
-                        <h3 style={{ margin: 0, fontWeight: 800 }}>New Announcement</h3>
-                    </div>
-
-                    <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-                        <Input
-                            label="Title"
-                            placeholder="e.g. Weekend Special: Prime Rib"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            required
-                        />
-
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Description</label>
-                            <textarea
-                                value={desc}
-                                onChange={e => setDesc(e.target.value)}
-                                placeholder="What's happening?"
-                                style={{
-                                    width: '100%',
-                                    padding: 'var(--space-3)',
-                                    borderRadius: 'var(--radius)',
-                                    border: '1px solid var(--border)',
-                                    minHeight: '120px',
-                                    fontSize: '0.9rem',
-                                    resize: 'vertical'
-                                }}
-                            />
-                        </div>
-
-                        <Input
-                            label="Image URL"
-                            placeholder="https://images.unsplash.com/..."
-                            value={imageUrl}
-                            onChange={e => setImageUrl(e.target.value)}
-                        />
-
-                        {imageUrl && (
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 2px 8px rgba(var(--primary-rgb), 0.1)'
+                        }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'var(--primary)'
+                                e.currentTarget.querySelector('svg')!.style.color = 'white'
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'white'
+                                e.currentTarget.querySelector('svg')!.style.color = 'var(--primary)'
+                            }}
+                        >
+                            <ArrowLeft size={22} color="var(--primary)" style={{ transition: 'all 0.3s ease' }} />
+                        </button>
+                    </Link>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
                             <div style={{
-                                width: '100%',
-                                height: '160px',
-                                borderRadius: 'var(--radius)',
-                                overflow: 'hidden',
-                                border: '1px solid var(--border)',
-                                position: 'relative'
+                                background: 'var(--primary)',
+                                padding: '14px',
+                                borderRadius: '16px',
+                                boxShadow: '0 4px 16px rgba(var(--primary-rgb), 0.25)'
                             }}>
-                                <img src={imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '8px',
-                                    left: '8px',
-                                    background: 'rgba(0,0,0,0.5)',
-                                    color: 'white',
-                                    padding: '4px 8px',
-                                    borderRadius: '4px',
-                                    fontSize: '0.65rem',
-                                    fontWeight: 700,
-                                    backdropFilter: 'blur(4px)'
-                                }}>IMAGE PREVIEW</div>
+                                <Bell size={28} color="white" />
                             </div>
-                        )}
-
-                        <Input
-                            label="Action Link (Optional)"
-                            placeholder="https://..."
-                            value={link}
-                            onChange={e => setLink(e.target.value)}
-                        />
-
-                        <Button type="submit" isLoading={loading} style={{ height: '48px', marginTop: 'var(--space-2)' }}>
-                            <Plus size={18} style={{ marginRight: '8px' }} />
-                            Publish Announcement
-                        </Button>
-                    </form>
+                            <div>
+                                <h1 style={{
+                                    fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+                                    fontWeight: '600',
+                                    margin: 0,
+                                    color: 'var(--text)',
+                                    letterSpacing: '-0.01em',
+                                }}>
+                                    Announcements & Events
+                                </h1>
+                                <p style={{
+                                    color: 'var(--text-muted)',
+                                    margin: '4px 0 0 0',
+                                    fontSize: 'clamp(0.9rem, 2vw, 1.1rem)',
+                                    fontWeight: '400',
+                                    fontStyle: 'italic'
+                                }}>
+                                    Manage restaurant news, events and promotions
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* List Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 style={{ margin: 0, fontWeight: 800 }}>Published Board</h3>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>{news.length} Announcements</span>
-                    </div>
-
-                    {news.length === 0 ? (
-                        <div style={{ padding: 'var(--space-12)', textAlign: 'center', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-                            <div style={{ color: 'var(--text-muted)', marginBottom: 'var(--space-4)' }}>
-                                <Sparkles size={48} />
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))',
+                    gap: '2.5rem',
+                    alignItems: 'start'
+                }}>
+                    {/* Creator Section */}
+                    <div style={{
+                        background: 'white',
+                        padding: '2.5rem',
+                        borderRadius: '24px',
+                        border: '1px solid rgba(var(--primary-rgb), 0.15)',
+                        boxShadow: '0 8px 32px rgba(var(--primary-rgb), 0.08)',
+                        position: isMobile ? 'static' : 'sticky',
+                        top: '2rem'
+                    }}>
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px',
+                            marginBottom: '2rem',
+                            paddingBottom: '1.5rem',
+                            borderBottom: '2px solid rgba(var(--primary-rgb), 0.1)'
+                        }}>
+                            <div style={{
+                                width: '48px',
+                                height: '48px',
+                                borderRadius: '14px',
+                                background: 'var(--primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 16px rgba(var(--primary-rgb), 0.25)'
+                            }}>
+                                <Plus size={24} color="white" />
                             </div>
-                            <h3 style={{ margin: '0 0 8px 0' }}>No announcements yet</h3>
-                            <p style={{ color: 'var(--text-muted)', margin: 0 }}>Spread the word about your latest updates!</p>
+                            <h3 style={{
+                                margin: 0,
+                                fontWeight: '600',
+                                fontSize: '1.5rem',
+                                color: 'var(--text)',
+                            }}>
+                                New Announcement
+                            </h3>
                         </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--space-6)' }}>
-                            {news.map(item => (
-                                <div key={item.id} className="hover-lift" style={{
-                                    background: 'var(--surface)',
-                                    borderRadius: 'var(--radius-lg)',
-                                    overflow: 'hidden',
-                                    border: '1px solid var(--border)',
-                                    boxShadow: 'var(--shadow-sm)',
-                                    display: 'flex',
-                                    flexDirection: 'column'
-                                }}>
-                                    {item.image_url && (
-                                        <div style={{ width: '100%', height: '140px', background: 'rgba(0,0,0,0.05)' }}>
-                                            <img src={item.image_url} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        </div>
-                                    )}
-                                    <div style={{ padding: 'var(--space-5)', flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)' }}>
-                                            <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, lineHeight: 1.3 }}>{item.title}</h4>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleDelete(item.id)}
-                                                style={{ color: '#EF4444', height: '32px', width: '32px', padding: 0 }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </Button>
-                                        </div>
-                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '0 0 var(--space-4) 0', lineHeight: 1.5 }}>
-                                            {item.description}
-                                        </p>
 
-                                        <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            paddingTop: 'var(--space-4)',
-                                            borderTop: '1px solid var(--border-light)',
-                                            marginTop: 'auto'
-                                        }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                                                <Calendar size={12} />
-                                                {new Date(item.created_at).toLocaleDateString()}
-                                            </div>
-                                            {item.link && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800 }}>
-                                                    <LinkIcon size={12} />
-                                                    LINK ATTACHED
-                                                </div>
-                                            )}
-                                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                            <ItalianFormField
+                                label="Title"
+                                value={title}
+                                onChange={e => setTitle(e.target.value)}
+                                placeholder="e.g. Special Autumn Menu"
+                                required
+                            />
+
+                            <div>
+                                <label style={{
+                                    display: 'block',
+                                    marginBottom: '12px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: '700',
+                                    color: 'var(--text-muted)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.1em',
+                                }}>
+                                    Description
+                                </label>
+                                <textarea
+                                    value={desc}
+                                    onChange={e => setDesc(e.target.value)}
+                                    placeholder="Describe the event or announcement..."
+                                    style={{
+                                        width: '100%',
+                                        padding: '16px 18px',
+                                        borderRadius: '14px',
+                                        border: '2px solid rgba(var(--primary-rgb), 0.15)',
+                                        minHeight: '130px',
+                                        fontSize: '1rem',
+                                        resize: 'vertical',
+                                        outline: 'none',
+                                        transition: 'all 0.3s ease',
+                                        background: 'white'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = 'var(--primary)'
+                                        e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb), 0.08)'
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = 'rgba(var(--primary-rgb), 0.15)'
+                                        e.target.style.boxShadow = 'none'
+                                    }}
+                                />
+                            </div>
+
+                            <ItalianFormField
+                                label="Image URL"
+                                icon={<Image size={16} />}
+                                value={imageUrl}
+                                onChange={e => setImageUrl(e.target.value)}
+                                placeholder="https://..."
+                            />
+
+                            {imageUrl && (
+                                <div style={{
+                                    width: '100%',
+                                    height: '200px',
+                                    borderRadius: '16px',
+                                    overflow: 'hidden',
+                                    border: '3px solid rgba(var(--primary-rgb), 0.15)',
+                                    position: 'relative',
+                                    boxShadow: '0 4px 16px rgba(0,0,0,0.08)'
+                                }}>
+                                    <img src={imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '16px',
+                                        left: '16px',
+                                        background: 'rgba(var(--primary-rgb), 0.92)',
+                                        color: 'white',
+                                        padding: '8px 16px',
+                                        borderRadius: '10px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: '700',
+                                        backdropFilter: 'blur(8px)',
+                                        letterSpacing: '0.08em',
+                                    }}>
+                                        PREVIEW
                                     </div>
                                 </div>
-                            ))}
+                            )}
+
+                            <ItalianFormField
+                                label="Link (Optional)"
+                                icon={<LinkIcon size={16} />}
+                                value={linkUrl}
+                                onChange={e => setLinkUrl(e.target.value)}
+                                placeholder="https://..."
+                            />
+
+                            <button
+                                onClick={handleAdd}
+                                disabled={loading || !title}
+                                style={{
+                                    height: '58px',
+                                    background: 'var(--primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '14px',
+                                    fontSize: '1.05rem',
+                                    fontWeight: '600',
+                                    cursor: loading || !title ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '12px',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: '0 4px 16px rgba(var(--primary-rgb), 0.3)',
+                                    opacity: loading || !title ? 0.6 : 1,
+                                    marginTop: '0.5rem',
+                                    letterSpacing: '0.02em'
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!loading && title) {
+                                        e.currentTarget.style.transform = 'translateY(-2px)'
+                                        e.currentTarget.style.boxShadow = '0 6px 24px rgba(var(--primary-rgb), 0.4)'
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)'
+                                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(var(--primary-rgb), 0.3)'
+                                }}
+                            >
+                                {loading ? (
+                                    <div style={{ width: '22px', height: '22px', border: '3px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                                ) : (
+                                    <>
+                                        <ChefHat size={20} />
+                                        Publish Announcement
+                                    </>
+                                )}
+                            </button>
                         </div>
+                    </div>
+
+                    {/* List Section */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0 0.5rem'
+                        }}>
+                            <h3 style={{
+                                margin: 0,
+                                fontWeight: '600',
+                                fontSize: '1.75rem',
+                                color: 'var(--text)',
+                            }}>
+                                Published Board
+                            </h3>
+                            <span style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--text-muted)',
+                                fontWeight: '600',
+                                background: 'rgba(var(--primary-rgb), 0.08)',
+                                padding: '8px 18px',
+                                borderRadius: '24px',
+                                border: '1px solid rgba(var(--primary-rgb), 0.15)',
+                            }}>
+                                {news.length} {news.length === 1 ? 'Announcement' : 'Announcements'}
+                            </span>
+                        </div>
+
+                        {news.length === 0 ? (
+                            <div style={{
+                                padding: '5rem 2rem',
+                                textAlign: 'center',
+                                background: 'white',
+                                borderRadius: '24px',
+                                border: '2px dashed rgba(var(--primary-rgb), 0.2)'
+                            }}>
+                                <div style={{ color: 'var(--border)', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
+                                    <Sparkles size={72} strokeWidth={1.5} />
+                                </div>
+                                <h3 style={{ margin: '0 0 12px 0', fontSize: '1.5rem', color: 'var(--text)', fontWeight: '600' }}>
+                                    No announcements yet
+                                </h3>
+                                <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                                    Start sharing news and events with your guests
+                                </p>
+                            </div>
+                        ) : (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 310px), 1fr))',
+                                gap: '1.5rem'
+                            }}>
+                                {news.map(item => (
+                                    <ItalianAnnouncementCard
+                                        key={item.id}
+                                        item={item}
+                                        onDelete={handleDelete}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <style>{`
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `}</style>
+        </div>
+    )
+}
+
+function ItalianFormField({ label, icon, ...props }: { [x: string]: any; label: any; icon?: any; }) {
+    return (
+        <div>
+            <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '12px',
+                fontSize: '0.75rem',
+                fontWeight: '700',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+            }}>
+                {icon}
+                {label}
+            </label>
+            <input
+                {...props}
+                style={{
+                    width: '100%',
+                    padding: '16px 18px',
+                    borderRadius: '14px',
+                    border: '2px solid rgba(var(--primary-rgb), 0.15)',
+                    fontSize: '1rem',
+                    transition: 'all 0.3s ease',
+                    outline: 'none',
+                    background: 'white',
+                }}
+                onFocus={(e) => {
+                    e.target.style.borderColor = 'var(--primary)'
+                    e.target.style.boxShadow = '0 0 0 4px rgba(var(--primary-rgb), 0.08)'
+                }}
+                onBlur={(e) => {
+                    e.target.style.borderColor = 'rgba(var(--primary-rgb), 0.15)'
+                    e.target.style.boxShadow = 'none'
+                }}
+            />
+        </div>
+    )
+}
+
+function ItalianAnnouncementCard({ item, onDelete }) {
+    return (
+        <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            overflow: 'hidden',
+            border: '1px solid rgba(var(--primary-rgb), 0.15)',
+            boxShadow: '0 4px 16px rgba(var(--primary-rgb), 0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'all 0.4s ease',
+            cursor: 'default'
+        }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-6px)'
+                e.currentTarget.style.boxShadow = '0 12px 32px rgba(var(--primary-rgb), 0.15)'
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(var(--primary-rgb), 0.08)'
+            }}
+        >
+            {item.image_url && (
+                <div style={{
+                    width: '100%',
+                    height: '180px',
+                    background: 'rgba(var(--primary-rgb), 0.05)',
+                    position: 'relative',
+                    borderBottom: '1px solid rgba(var(--primary-rgb), 0.1)'
+                }}>
+                    <img
+                        src={item.image_url}
+                        alt={item.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(to top, rgba(var(--primary-rgb), 0.3) 0%, transparent 50%)'
+                    }} />
+                </div>
+            )}
+
+            <div style={{ padding: '1.75rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <h4 style={{
+                        margin: 0,
+                        fontSize: '1.35rem',
+                        fontWeight: '600',
+                        lineHeight: 1.3,
+                        color: 'var(--text)',
+                        flex: 1,
+                    }}>
+                        {item.title}
+                    </h4>
+                    <button
+                        onClick={() => onDelete(item.id)}
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            background: 'rgba(220, 38, 38, 0.08)',
+                            color: '#DC2626',
+                            border: '1px solid rgba(220, 38, 38, 0.2)',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s ease',
+                            marginLeft: '16px',
+                            flexShrink: 0
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#DC2626'
+                            e.currentTarget.style.color = 'white'
+                            e.currentTarget.style.transform = 'scale(1.05)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(220, 38, 38, 0.08)'
+                            e.currentTarget.style.color = '#DC2626'
+                            e.currentTarget.style.transform = 'scale(1)'
+                        }}
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                </div>
+
+                <p style={{
+                    fontSize: '0.95rem',
+                    color: 'var(--text-muted)',
+                    margin: '0 0 1.25rem 0',
+                    lineHeight: 1.7,
+                    flex: 1,
+                }}>
+                    {item.description}
+                </p>
+
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingTop: '1.25rem',
+                    borderTop: '1px solid rgba(var(--primary-rgb), 0.1)',
+                    marginTop: 'auto',
+                    gap: '1rem',
+                    flexWrap: 'wrap'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '0.8rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: '600',
+                    }}>
+                        <Calendar size={15} />
+                        {new Date(item.created_at).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                        })}
+                    </div>
+                    {item.link && (
+                        <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '7px',
+                                fontSize: '0.8rem',
+                                color: 'var(--primary)',
+                                fontWeight: '700',
+                                textDecoration: 'none',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.color = 'var(--secondary)'
+                                e.currentTarget.style.gap = '10px'
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.color = 'var(--primary)'
+                                e.currentTarget.style.gap = '7px'
+                            }}
+                        >
+                            <ExternalLink size={15} />
+                            OPEN LINK
+                        </a>
                     )}
                 </div>
             </div>

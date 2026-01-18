@@ -62,9 +62,6 @@ export default function GuestMenuPage() {
         <div className="container" style={{ paddingTop: '1.5rem', paddingBottom: '5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <Link href="/" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}>
-                        <ChevronLeft size={28} />
-                    </Link>
                     <h1 style={{ fontFamily: 'var(--font-serif)', color: 'var(--primary)', margin: 0 }}>Menu</h1>
                 </div>
                 {cartItems.length > 0 && (
@@ -81,7 +78,7 @@ export default function GuestMenuPage() {
                 onSearch={setSearchQuery}
             />
 
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '1rem', scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '1rem', scrollbarWidth: 'none', paddingTop: '1rem' }}>
                 <CategoryBadge name="All" isActive={activeCategory === 'all'} onClick={() => setActiveCategory('all')} />
                 {categories.map(cat => (
                     <CategoryBadge key={cat.id} name={cat.name} isActive={activeCategory === cat.id} onClick={() => setActiveCategory(cat.id)} />

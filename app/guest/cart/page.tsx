@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/lib/context/CartContext'
 import { supabase } from '@/lib/database/supabase'
@@ -17,8 +17,55 @@ export default function GuestCartPage() {
     const [name, setName] = useState('')
     const [phone, setPhone] = useState('')
     const [tableName, setTableName] = useState('')
+    const [numGuests, setNumGuests] = useState('1')
+    const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>('indoor')
     const [readyIn, setReadyIn] = useState('15')
     const [notes, setNotes] = useState('')
+
+    // Persistence: Load from localStorage on mount
+    useEffect(() => {
+        const savedName = localStorage.getItem('guest_name')
+        const savedPhone = localStorage.getItem('guest_phone')
+        const savedTable = localStorage.getItem('guest_table')
+        const savedLocation = localStorage.getItem('guest_location')
+        const savedNumGuests = localStorage.getItem('guest_num_guests')
+
+        if (savedName) setName(savedName)
+        if (savedPhone) setPhone(savedPhone)
+        if (savedTable) setTableName(savedTable)
+        if (savedLocation) setLocationType(savedLocation as 'indoor' | 'outdoor')
+        if (savedNumGuests) setNumGuests(savedNumGuests)
+    }, [])
+
+    // State updaters with persistence
+    const updateName = (val: string) => {
+        setName(val)
+        localStorage.setItem('guest_name', val)
+    }
+
+    const updatePhone = (val: string) => {
+        const numeric = val.replace(/\D/g, '')
+        const sanitized = numeric.startsWith('0') ? numeric.slice(1) : numeric
+        const truncated = sanitized.slice(0, 10)
+
+        setPhone(truncated)
+        localStorage.setItem('guest_phone', truncated)
+    }
+
+    const updateTable = (val: string) => {
+        setTableName(val)
+        localStorage.setItem('guest_table', val)
+    }
+
+    const updateLocation = (val: 'indoor' | 'outdoor') => {
+        setLocationType(val)
+        localStorage.setItem('guest_location', val)
+    }
+
+    const updateNumGuests = (val: string) => {
+        setNumGuests(val)
+        localStorage.setItem('guest_num_guests', val)
+    }
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -35,6 +82,8 @@ export default function GuestCartPage() {
                     user_id: null, // Guest
                     guest_info: guestInfo,
                     table_name: tableName,
+                    location_type: locationType,
+                    num_guests: parseInt(numGuests) || 1,
                     status: 'pending',
                     total: total,
                     ready_in_minutes: parseInt(readyIn),
@@ -103,7 +152,7 @@ export default function GuestCartPage() {
                     }}>
                         <div style={{ flex: 1 }}>
                             <h3 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>{item.name}</h3>
-                            <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>${item.price.toFixed(2)}</p>
+                            <p style={{ color: 'var(--primary)', fontWeight: 'bold' }}>₹{item.price.toFixed(2)}</p>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -128,7 +177,7 @@ export default function GuestCartPage() {
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontSize: '1.25rem', fontWeight: 'bold' }}>
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                 </div>
 
                 <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -137,7 +186,7 @@ export default function GuestCartPage() {
                         placeholder="John Doe"
                         required
                         value={name}
-                        onChange={e => setName(e.target.value)}
+                        onChange={e => updateName(e.target.value)}
                     />
                     <Input
                         label="Phone Number"
@@ -145,36 +194,79 @@ export default function GuestCartPage() {
                         required
                         type="tel"
                         value={phone}
-                        onChange={e => setPhone(e.target.value)}
+                        onChange={e => updatePhone(e.target.value)}
                     />
+                    <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-2)' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontWeight: 600 }}>
+                            <input
+                                type="radio"
+                                name="locationType"
+                                checked={locationType === 'indoor'}
+                                onChange={() => updateLocation('indoor')}
+                                style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }}
+                            />
+                            Indoor
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontWeight: 600 }}>
+                            <input
+                                type="radio"
+                                name="locationType"
+                                checked={locationType === 'outdoor'}
+                                onChange={() => updateLocation('outdoor')}
+                                style={{ accentColor: 'var(--primary)', width: '18px', height: '18px' }}
+                            />
+                            Outdoor
+                        </label>
+                    </div>
+
                     <Input
                         label="Table / Room Number"
-                        placeholder="e.g. Table 5"
+                        placeholder="e.g. 5"
+                        type="number"
+                        pattern="[0-9]*"
+                        inputMode="numeric"
                         required
                         value={tableName}
-                        onChange={e => setTableName(e.target.value)}
+                        onChange={e => updateTable(e.target.value)}
+                    />
+
+                    <Input
+                        label="Number of Guests"
+                        type="number"
+                        min="1"
+                        required
+                        value={numGuests}
+                        onChange={e => updateNumGuests(e.target.value)}
                     />
 
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Ready In</label>
                         {/* ... Ready In Options ... */}
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {['15', '30', '60'].map(min => (
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {[
+                                { label: 'Now', value: '0' },
+                                { label: '15m', value: '15' },
+                                { label: '30m', value: '30' },
+                                { label: '1h', value: '60' }
+                            ].map(option => (
                                 <button
-                                    key={min}
+                                    key={option.value}
                                     type="button"
-                                    onClick={() => setReadyIn(min)}
+                                    onClick={() => setReadyIn(option.value)}
                                     style={{
                                         flex: 1,
+                                        minWidth: '70px',
                                         padding: '0.75rem',
                                         borderRadius: 'var(--radius)',
-                                        border: readyIn === min ? '2px solid var(--primary)' : '1px solid var(--border)',
-                                        background: readyIn === min ? 'rgba(192, 39, 45, 0.05)' : 'white',
-                                        color: readyIn === min ? 'var(--primary)' : 'inherit',
-                                        fontWeight: readyIn === min ? 'bold' : 'normal'
+                                        border: readyIn === option.value ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                        background: readyIn === option.value ? 'rgba(192, 39, 45, 0.05)' : 'white',
+                                        color: readyIn === option.value ? 'var(--primary)' : 'inherit',
+                                        fontWeight: readyIn === option.value ? 'bold' : 'normal',
+                                        cursor: 'pointer',
+                                        transition: '0.2s'
                                     }}
                                 >
-                                    {min} Mins
+                                    {option.label}
                                 </button>
                             ))}
                         </div>

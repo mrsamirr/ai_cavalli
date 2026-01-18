@@ -107,7 +107,7 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{userDetails?.name || 'Ai Cavalli Member'}</h2>
-                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.875rem' }}>{role?.toUpperCase()} ACCOUNT</p>
+                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.875rem' }}>{role === 'student' ? 'RIDER' : role?.toUpperCase()} ACCOUNT</p>
                             </div>
                         </div>
 
@@ -227,7 +227,7 @@ export default function ProfilePage() {
                                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>
                                             {new Date(order.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </p>
-                                        <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--primary)' }}>${order.total.toFixed(2)}</span>
+                                        <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--primary)' }}>₹{order.total.toFixed(2)}</span>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>LOCATION</p>

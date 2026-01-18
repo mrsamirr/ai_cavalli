@@ -38,7 +38,7 @@ export function MenuItemCard({ item, onAdd }: MenuItemCardProps) {
             <div className={styles.content}>
                 <div className={styles.header}>
                     <h3 className={styles.name}>{item.name}</h3>
-                    <span className={styles.price}>${item.price.toFixed(2)}</span>
+                    <span className={styles.price}>₹{item.price.toFixed(2)}</span>
                 </div>
 
                 <p className={styles.description}>{item.description}</p>

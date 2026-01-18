@@ -2,22 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Menu, ShoppingCart, User } from 'lucide-react'
+import { Home, Menu, ShoppingCart, Clock } from 'lucide-react'
 import clsx from 'clsx'
 import styles from './BottomNav.module.css'
 
 const tabs = [
-    { name: 'Home', href: '/home', icon: Home, ariaLabel: 'Go to home page' },
-    { name: 'Menu', href: '/menu', icon: Menu, ariaLabel: 'View menu' },
-    { name: 'Cart', href: '/cart', icon: ShoppingCart, ariaLabel: 'View shopping cart' },
-    { name: 'Profile', href: '/profile', icon: User, ariaLabel: 'View profile' },
+    { name: 'Home', href: '/guest/home', icon: Home, ariaLabel: 'Go to home page' },
+    { name: 'Menu', href: '/guest/menu', icon: Menu, ariaLabel: 'View menu' },
+    { name: 'Cart', href: '/guest/cart', icon: ShoppingCart, ariaLabel: 'View shopping cart' },
+    { name: 'Status', href: '/guest/status', icon: Clock, ariaLabel: 'View order status' },
 ]
 
-export function BottomNav() {
+export function GuestBottomNav() {
     const pathname = usePathname()
 
     return (
-        <nav className={styles.nav} role="navigation" aria-label="Main navigation">
+        <nav className={styles.nav} role="navigation" aria-label="Guest navigation">
             {tabs.map((tab) => {
                 const Icon = tab.icon
                 const isActive = pathname.startsWith(tab.href)

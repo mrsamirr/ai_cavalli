@@ -127,6 +127,10 @@ export default function OrdersPage() {
                                             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Placed At</p>
                                             <p style={{ margin: 0, fontWeight: 700 }}>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                         </div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Guests</p>
+                                            <p style={{ margin: 0, fontWeight: 700 }}>{order.num_guests || 1}</p>
+                                        </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Location</p>
                                             <p style={{ margin: 0, fontWeight: 700 }}>{order.table_name}</p>
@@ -146,7 +150,7 @@ export default function OrdersPage() {
                                             <Package size={20} color="var(--primary)" />
                                             <span style={{ fontWeight: 600 }}>Order Total</span>
                                         </div>
-                                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>${order.total.toFixed(2)}</span>
+                                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>₹{order.total.toFixed(2)}</span>
                                     </div>
 
                                     {order.notes && (
