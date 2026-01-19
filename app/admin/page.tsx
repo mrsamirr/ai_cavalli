@@ -149,8 +149,8 @@ export default function AdminDashboard() {
             })
             setDemographicData([
                 { name: 'Riders', value: demographics.rider, color: '#C0272D' },
-                { name: 'Staff', value: demographics.staff, color: '#3B82F6' },
-                { name: 'Guests', value: demographics.guest, color: '#10B981' }
+                { name: 'Staff', value: demographics.staff, color: '#D97706' },
+                { name: 'Guests', value: demographics.guest, color: '#15803D' }
             ])
 
             // 3. Process Category Data
@@ -503,7 +503,7 @@ export default function AdminDashboard() {
                             {demographicData.map((d, i) => (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: d.color }} />
-                                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#cbd5e1' }}>{d.name}</span>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b' }}>{d.name}</span>
                                 </div>
                             ))}
                         </div>

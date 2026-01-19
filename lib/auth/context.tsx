@@ -70,12 +70,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const signIn = async (phone: string, pin: string) => {
+        // Sanitize phone input
+        const numeric = phone.replace(/\D/g, '')
+        const sanitizedPhone = numeric.startsWith('0') ? numeric.slice(1) : numeric
+        const cleanPhone = sanitizedPhone.slice(0, 10)
+
         // Map phone to dummy email
-        const email = `${phone}@example.com`
+        const email = `${cleanPhone}@example.com`
         const { error } = await supabase.auth.signInWithPassword({
             email,
             password: pin,
         })
+
+        if (error) {
+            console.error('[Auth] Sign-in failed:', {
+                message: error.message,
+                status: error.status,
+                email
+            })
+            if (error.message.includes('Email not confirmed')) {
+                console.warn('💡 TIP: Email confirmation is enabled in Supabase. Disable it in the dashboard (Authentication -> Settings) or use a real email to confirm.')
+            }
+        }
+
         return { error }
     }
 

@@ -52,7 +52,8 @@ export default function LoginPage() {
         try {
             const { error: authError } = await signIn(phone, pin)
             if (authError) {
-                setError(authError.message || 'Failed to login')
+                console.error('Login error:', authError)
+                setError(authError.message || 'Invalid credentials')
             } else {
                 if (loginRole === 'staff') {
                     router.push('/kitchen')
@@ -112,7 +113,8 @@ export default function LoginPage() {
             // Auto-login after signup
             const { error: loginError } = await signIn(phone, pin)
             if (loginError) {
-                setError('Account created! Please login.')
+                console.warn('Auto-login failed:', loginError)
+                setError(`Account created! But could not log in: ${loginError.message}. Please try logging in manually.`)
                 setView('login')
             } else {
                 router.push('/home')

@@ -111,10 +111,15 @@ export default function SeedPage() {
         e.preventDefault()
         setLoading(true)
 
-        // Auto-generate email if not provided
-        const finalEmail = email.trim() || `${phone.trim()}@example.com`
+        // Sanitize phone
+        const numeric = phone.replace(/\D/g, '')
+        const sanitizedPhone = numeric.startsWith('0') ? numeric.slice(1) : numeric
+        const finalPhone = sanitizedPhone.slice(0, 10)
 
-        await createUser({ phone, email: finalEmail, pin, name, role })
+        // Auto-generate email if not provided
+        const finalEmail = email.trim() || `${finalPhone}@example.com`
+
+        await createUser({ phone: finalPhone, email: finalEmail, pin, name, role })
         setLoading(false)
     }
 

@@ -89,8 +89,13 @@ export default function UserControlPage() {
         setSubmitting(true)
 
         try {
-            // 1. Create Auth User
-            const finalEmail = formData.email || `${formData.phone}@example.com`
+            // 1. Sanitize Phone
+            const numeric = formData.phone.replace(/\D/g, '')
+            const sanitizedPhone = numeric.startsWith('0') ? numeric.slice(1) : numeric
+            const phone = sanitizedPhone.slice(0, 10)
+
+            // 2. Create Auth User
+            const finalEmail = formData.email || `${phone}@example.com`
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: finalEmail,
                 password: formData.pin,
@@ -99,11 +104,11 @@ export default function UserControlPage() {
 
             if (authError) throw authError
 
-            // 2. Insert into public.users
+            // 3. Insert into public.users
             const { error: dbError } = await supabase.from('users').insert({
                 id: authData.user?.id,
                 name: formData.name,
-                phone: formData.phone,
+                phone: phone,
                 pin: formData.pin,
                 role: formData.role,
                 parent_name: formData.role === 'student' ? formData.parent_name : null
@@ -127,11 +132,16 @@ export default function UserControlPage() {
         setSubmitting(true)
 
         try {
+            // Sanitize Phone
+            const numeric = formData.phone.replace(/\D/g, '')
+            const sanitizedPhone = numeric.startsWith('0') ? numeric.slice(1) : numeric
+            const phone = sanitizedPhone.slice(0, 10)
+
             const { error } = await supabase
                 .from('users')
                 .update({
                     name: formData.name,
-                    phone: formData.phone,
+                    phone: phone,
                     role: formData.role,
                     parent_name: formData.role === 'student' ? formData.parent_name : null
                 })

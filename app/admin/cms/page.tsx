@@ -188,7 +188,9 @@ export default function CMSPage() {
                         border: '1px solid rgba(var(--primary-rgb), 0.15)',
                         boxShadow: '0 8px 32px rgba(var(--primary-rgb), 0.08)',
                         position: isMobile ? 'static' : 'sticky',
-                        top: '2rem'
+                        top: '2rem',
+                        maxHeight: isMobile ? 'none' : 'calc(100vh - 4rem)',
+                        overflowY: isMobile ? 'visible' : 'auto'
                     }}>
                         <div style={{
                             display: 'flex',
