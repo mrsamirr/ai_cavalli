@@ -88,6 +88,16 @@ export default function AdminDashboard() {
         return new Date().toISOString().split('T')[0]
     })
 
+    // Separate state for Export Data
+    const [exportStartDate, setExportStartDate] = useState(() => {
+        const d = new Date()
+        d.setDate(1)
+        return d.toISOString().split('T')[0]
+    })
+    const [exportEndDate, setExportEndDate] = useState(() => {
+        return new Date().toISOString().split('T')[0]
+    })
+
     useEffect(() => {
         fetchData()
     }, [startDate, endDate])
@@ -200,8 +210,8 @@ export default function AdminDashboard() {
                     menu_item:menu_items(name)
                 )
             `)
-            .gte('created_at', `${startDate}T00:00:00`)
-            .lte('created_at', `${endDate}T23:59:59`)
+            .gte('created_at', `${exportStartDate}T00:00:00`)
+            .lte('created_at', `${exportEndDate}T23:59:59`)
             .order('created_at', { ascending: false })
             .then(({ data }) => {
                 if (!data) return
@@ -284,41 +294,81 @@ export default function AdminDashboard() {
                             </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b' }}>FROM</span>
+                            {/* Dashboard Stats Date Range */}
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: 'rgba(255,255,255,0.7)',
+                                padding: '8px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(0,0,0,0.1)'
+                            }}>
+                                <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#64748b' }}>STATS</span>
                                 <input
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    style={{ background: 'transparent', border: 'none', color: '#1f2937', fontWeight: '600', outline: 'none' }}
+                                    style={{ background: 'transparent', border: 'none', color: '#1f2937', fontWeight: '600', outline: 'none', fontSize: '0.85rem' }}
                                 />
-                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b', marginLeft: '8px' }}>TO</span>
+                                <span style={{ color: '#cbd5e1' }}>to</span>
                                 <input
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    style={{ background: 'transparent', border: 'none', color: '#1f2937', fontWeight: '600', outline: 'none' }}
+                                    style={{ background: 'transparent', border: 'none', color: '#1f2937', fontWeight: '600', outline: 'none', fontSize: '0.85rem' }}
                                 />
                             </div>
-                            <button onClick={downloadCSV} style={{
-                                background: 'rgba(255,255,255,0.1)',
-                                backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(255,255,255,0.2)',
-                                color: '#1f2937',
-                                padding: '14px 28px',
-                                borderRadius: '12px',
-                                fontWeight: '700',
-                                fontSize: '0.95rem',
-                                cursor: 'pointer',
+
+                            <div style={{ width: '2px', height: '32px', background: 'rgba(0,0,0,0.1)', margin: '0 8px' }} />
+
+                            {/* Export Date Range Group */}
+                            <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '10px',
-                                transition: 'all 0.3s ease',
-                                boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+                                gap: '8px',
+                                background: 'white',
+                                padding: '8px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(var(--primary-rgb), 0.2)',
+                                boxShadow: '0 2px 8px rgba(var(--primary-rgb), 0.1)'
                             }}>
-                                <Download size={18} />
-                                Export Data
-                            </button>
+                                <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.05em' }}>EXPORT</span>
+                                <input
+                                    type="date"
+                                    value={exportStartDate}
+                                    onChange={(e) => setExportStartDate(e.target.value)}
+                                    style={{ background: 'transparent', border: 'none', color: '#1f2937', fontWeight: '600', outline: 'none', fontSize: '0.85rem' }}
+                                />
+                                <span style={{ color: '#cbd5e1' }}>|</span>
+                                <input
+                                    type="date"
+                                    value={exportEndDate}
+                                    onChange={(e) => setExportEndDate(e.target.value)}
+                                    style={{ background: 'transparent', border: 'none', color: '#1f2937', fontWeight: '600', outline: 'none', fontSize: '0.85rem' }}
+                                />
+                                <button onClick={downloadCSV} style={{
+                                    background: 'var(--primary)',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '6px 16px',
+                                    borderRadius: '8px',
+                                    fontWeight: '700',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    marginLeft: '8px',
+                                    transition: 'all 0.3s ease',
+                                }}
+                                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                >
+                                    <Download size={14} />
+                                    Export
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -426,6 +476,8 @@ export default function AdminDashboard() {
                                         color: 'white',
                                         fontWeight: '600'
                                     }}
+                                    itemStyle={{ color: '#fff' }}
+                                    labelStyle={{ color: '#fff' }}
                                 />
                                 <Area
                                     type="monotone"
@@ -464,6 +516,8 @@ export default function AdminDashboard() {
                                         color: 'white',
                                         fontWeight: '600'
                                     }}
+                                    itemStyle={{ color: '#fff' }}
+                                    labelStyle={{ color: '#fff' }}
                                 />
                                 <Line
                                     type="monotone"
@@ -503,6 +557,8 @@ export default function AdminDashboard() {
                                         color: 'white',
                                         fontWeight: '600'
                                     }}
+                                    itemStyle={{ color: '#fff' }}
+                                    labelStyle={{ color: '#fff' }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
@@ -537,6 +593,8 @@ export default function AdminDashboard() {
                                         color: 'white',
                                         fontWeight: '600'
                                     }}
+                                    itemStyle={{ color: '#fff' }}
+                                    labelStyle={{ color: '#fff' }}
                                 />
                                 <Bar dataKey="count" radius={[0, 8, 8, 0]} barSize={18}>
                                     {categoryData.map((entry, index) => (

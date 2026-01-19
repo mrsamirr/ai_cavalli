@@ -108,6 +108,10 @@ export default function GuestCartPage() {
 
             if (itemsError) throw itemsError
 
+            // Save Order ID to local history for persistence
+            const existingOrders = JSON.parse(localStorage.getItem('guest_orders') || '[]')
+            localStorage.setItem('guest_orders', JSON.stringify([...existingOrders, order.id]))
+
             clearCart()
             router.push(`/guest/status?orderId=${order.id}`)
         } catch (err) {
