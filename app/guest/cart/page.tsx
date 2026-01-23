@@ -148,7 +148,7 @@ export default function GuestCartPage() {
                 <h1 style={{ margin: 0, color: 'var(--primary)', fontFamily: 'var(--font-serif)' }}>Guest Checkout</h1>
             </div>
 
-            {/* Cart Items List (Same as Customer - ideally refactor to Component) */}
+            {/* Cart Items List */}
             <div style={{ marginBottom: '2rem' }}>
                 {items.map(item => (
                     <div key={item.itemId} style={{
@@ -250,9 +250,7 @@ export default function GuestCartPage() {
                         onChange={e => updateNumGuests(e.target.value)}
                     />
 
-                    <textarea
-
-                        <Input
+                    <Input
                         label="Notes (Optional)"
                         placeholder="e.g. No salt..."
                         value={notes}
