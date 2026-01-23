@@ -14,8 +14,15 @@ export default function CustomerLayout({
     const router = useRouter()
 
     useEffect(() => {
-        if (!isLoading && user && (role === 'kitchen_manager' || role === 'admin')) {
-            router.push('/kitchen')
+        if (!isLoading) {
+            if (!user) {
+                // No authenticated user - redirect to login
+                router.push('/login')
+            } else if (role === 'kitchen_manager' || role === 'admin') {
+                // Kitchen/admin users should use kitchen portal
+                router.push('/kitchen')
+            }
+            // Else: authenticated student/staff can access customer portal
         }
     }, [user, role, isLoading, router])
 

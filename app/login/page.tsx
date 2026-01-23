@@ -6,18 +6,15 @@ import { useAuth } from '@/lib/auth/context'
 import { supabase } from '@/lib/database/supabase'
 import { sanitizePhone } from '@/lib/utils/phone'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { User, KeyRound, Utensils } from 'lucide-react'
+import { User, KeyRound, Utensils, ArrowLeft, ShieldCheck, ClipboardCheck } from 'lucide-react'
 import styles from './page.module.css'
 
 export default function LoginPage() {
-    const [view, setView] = useState<'select' | 'login' | 'signup'>('select')
+    const [view, setView] = useState<'select' | 'login' | 'signup' | 'reset-pin'>('select')
     const [loginRole, setLoginRole] = useState<'student' | 'staff'>('student')
 
     const [phone, setPhone] = useState('')
     const [pin, setPin] = useState('')
-    const [name, setName] = useState('')
-    const [parentName, setParentName] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -32,19 +29,6 @@ export default function LoginPage() {
         setPin('')
     }
 
-    const handleGuest = () => {
-        router.push('/guest/login')
-    }
-
-    const handleSignup = () => {
-        setView('signup')
-        setError('')
-        setPhone('')
-        setPin('')
-        setName('')
-        setParentName('')
-    }
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
@@ -56,6 +40,7 @@ export default function LoginPage() {
                 console.error('Login error:', authError)
                 setError(authError.message || 'Invalid credentials')
             } else {
+                // Redirect based on role
                 if (loginRole === 'staff') {
                     router.push('/kitchen')
                 } else {
@@ -69,243 +54,117 @@ export default function LoginPage() {
         }
     }
 
-    const handleSignupSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setError('')
-        setLoading(true)
-
-        try {
-            const cleanPhone = sanitizePhone(phone)
-            const email = `${cleanPhone}@example.com`
-
-            // Create auth user
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email,
-                password: pin,
-            })
-
-            if (authError) {
-                setError(authError.message)
-                setLoading(false)
-                return
-            }
-
-            if (!authData.user) {
-                setError('Failed to create account')
-                setLoading(false)
-                return
-            }
-
-            // Create database record
-            const { error: dbError } = await supabase.from('users').insert({
-                id: authData.user.id,
-                phone: cleanPhone,
-                pin,
-                name,
-                role: loginRole, // Use selected role
-                parent_name: loginRole === 'student' ? (parentName || null) : null
-            })
-
-            if (dbError) {
-                setError('Account created but failed to save details. Please contact admin.')
-                setLoading(false)
-                return
-            }
-
-            // Auto-login after signup
-            const { error: loginError } = await signIn(phone, pin)
-            if (loginError) {
-                console.warn('Auto-login failed:', loginError)
-                setError(`Account created! But could not log in: ${loginError.message}. Please try logging in manually.`)
-                setView('login')
-            } else {
-                router.push('/home')
-            }
-        } catch (err: any) {
-            setError(err.message || 'An unexpected error occurred')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    // SELECTION VIEW
-    if (view === 'select') {
-        return (
-            <main className={styles.main}>
-                <div className={styles.container}>
-                    <h1 className={styles.title}>Ai Cavalli</h1>
-                    <p className={styles.subtitle}>Please select your role</p>
-
-                    <div className={styles.grid}>
-                        <button className={styles.roleCard} onClick={() => handleRoleSelect('student')}>
-                            <User size={48} className={styles.icon} />
-                            <span>Rider Login</span>
-                        </button>
-
-                        <button className={styles.roleCard} onClick={handleGuest}>
-                            <Utensils size={48} className={styles.icon} />
-                            <span>Guest Order</span>
-                        </button>
-                    </div>
-
-                    <div className={styles.footer}>
-                        <button className={styles.staffLink} onClick={() => handleRoleSelect('staff')}>
-                            <KeyRound size={16} />
-                            Staff Login
-                        </button>
-                    </div>
-                </div>
-            </main>
-        )
-    }
-
-    // SIGNUP VIEW
-    if (view === 'signup') {
-        return (
-            <main className={styles.main}>
-                <div className={styles.card}>
-                    <button onClick={() => setView('select')} className={styles.backButton}>← Back</button>
-
-                    <h1 className={styles.title}>Create Account</h1>
-                    <p className={styles.subtitle}>Register to access the system</p>
-
-                    <form onSubmit={handleSignupSubmit} className={styles.form}>
-                        <Input
-                            label="Your Name"
-                            type="text"
-                            placeholder="John Doe"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                        />
-                        <Input
-                            label="Phone Number"
-                            type="tel"
-                            placeholder="1234567890"
-                            value={phone}
-                            onChange={(e) => {
-                                setPhone(sanitizePhone(e.target.value))
-                            }}
-                            required
-                            maxLength={10}
-                        />
-
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500 }}>
-                                Role
-                            </label>
-                            <select
-                                value={loginRole}
-                                onChange={(e) => setLoginRole(e.target.value as 'student' | 'staff')}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '8px',
-                                    border: '1px solid var(--border)',
-                                    fontSize: '1rem',
-                                    backgroundColor: 'var(--surface)'
-                                }}
-                            >
-                                <option value="student">Rider</option>
-                                <option value="staff">Staff</option>
-                                <option value="kitchen_manager">Kitchen Manager</option>
-                            </select>
-                        </div>
-
-                        {loginRole === 'student' && (
-                            <Input
-                                label="Parent Name (Optional)"
-                                type="text"
-                                placeholder="Parent's name"
-                                value={parentName}
-                                onChange={(e) => setParentName(e.target.value)}
-                            />
-                        )}
-
-                        <Input
-                            label="Create PIN (6 digits)"
-                            type="password"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            placeholder="123456"
-                            value={pin}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '')
-                                setPin(val.slice(0, 6))
-                            }}
-                            required
-                            minLength={6}
-                            maxLength={6}
-                        />
-
-                        {error && <div className={styles.error}>{error}</div>}
-
-                        <Button type="submit" isLoading={loading} className={styles.button}>
-                            Create Account
-                        </Button>
-
-                        <div className={styles.guestLink}>
-                            <a onClick={() => setView('login')} style={{ cursor: 'pointer' }}>
-                                Already have an account? Login
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </main>
-        )
-    }
-
-    // LOGIN FORM VIEW
     return (
         <main className={styles.main}>
-            <div className={styles.card}>
-                <button onClick={() => setView('select')} className={styles.backButton}>← Back</button>
+            <div className={styles.overlay} />
 
-                <h1 className={styles.title}>
-                    {loginRole === 'student' ? 'Rider Portal' : 'Staff Portal'}
-                </h1>
-                <p className={styles.subtitle}>Enter your credentials</p>
+            <div className={styles.contentWrapper}>
+                {view === 'select' && (
+                    <div className={`${styles.container} animate-reveal`}>
+                        <header className={styles.header}>
+                            <span className={styles.overline}>Dal 1994</span>
+                            <h1 className={styles.brandTitle}>Ai Cavalli</h1>
+                            <p className={styles.brandSubtitle}>Exclusive Dining & Operations</p>
+                        </header>
 
-                <form onSubmit={handleSubmit} className={styles.form}>
-                    <Input
-                        label="Phone Number"
-                        type="tel"
-                        placeholder="1234567890"
-                        value={phone}
-                        onChange={(e) => {
-                            setPhone(sanitizePhone(e.target.value))
-                        }}
-                        required
-                        maxLength={10}
-                    />
-                    <Input
-                        label="PIN"
-                        type="password"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        placeholder="******"
-                        value={pin}
-                        onChange={(e) => {
-                            const val = e.target.value.replace(/\D/g, '')
-                            setPin(val.slice(0, 6))
-                        }}
-                        required
-                        minLength={6}
-                        maxLength={6}
-                    />
+                        <div className={styles.roleGrid}>
+                            <button className={styles.premiumCard} onClick={() => router.push('/guest/login')}>
+                                <div className={styles.iconCircle}><Utensils size={24} /></div>
+                                <div className={styles.cardText}>
+                                    <h3>Guest Entry</h3>
+                                    <p>Continue to the culinary experience</p>
+                                </div>
+                            </button>
 
-                    {error && <div className={styles.error}>{error}</div>}
+                            <button className={styles.premiumCard} onClick={() => handleRoleSelect('student')}>
+                                <div className={styles.iconCircle}><User size={24} /></div>
+                                <div className={styles.cardText}>
+                                    <h3>Rider Portal</h3>
+                                    <p>Access your logistics dashboard</p>
+                                </div>
+                            </button>
+                        </div>
 
-                    <Button type="submit" isLoading={loading} className={styles.button}>
-                        Login
-                    </Button>
+                        <footer className={styles.selectFooter}>
+                            <div className={styles.divider}>
+                                <span className={styles.dividerLine}></span>
+                                <span className={styles.dividerText}>Authorized Access</span>
+                                <span className={styles.dividerLine}></span>
+                            </div>
 
-                    <div className={styles.guestLink}>
-                        <a onClick={handleSignup} style={{ cursor: 'pointer' }}>
-                            Don't have an account? Create one
-                        </a>
+                            <button className={styles.staffProceedButton} onClick={() => handleRoleSelect('staff')}>
+                                <div className={styles.staffButtonContent}>
+                                    <ShieldCheck size={20} className={styles.staffIcon} />
+                                    <div className={styles.staffButtonText}>
+                                        <span>Proceed as Staff / Instructor Rider</span>
+                                        <small>Internal Personnel Access Only</small>
+                                    </div>
+                                </div>
+                            </button>
+                        </footer>
                     </div>
-                </form>
+                )}
+
+                {view === 'login' && (
+                    <div className={`${styles.authCard} animate-slide-up`}>
+                        <button onClick={() => setView('select')} className={styles.backArrow}>
+                            <ArrowLeft size={20} />
+                        </button>
+
+                        <div className={styles.cardHeader}>
+                            <h2 className={styles.cardTitle}>
+                                {loginRole === 'staff' ? 'Staff Verification' : 'Rider Identity'}
+                            </h2>
+                            <p className={styles.cardSubtitle}>Enter secure credentials</p>
+                        </div>
+
+                        <form className={styles.premiumForm} onSubmit={handleSubmit}>
+                            <div className={styles.inputGroup}>
+                                <label>PHONE NUMBER</label>
+                                <input
+                                    type="tel"
+                                    placeholder="000 000 0000"
+                                    value={phone}
+                                    onChange={(e) => setPhone(sanitizePhone(e.target.value))}
+                                    required
+                                    maxLength={10}
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>ACCESS PIN</label>
+                                <input
+                                    type="password"
+                                    placeholder="••••••"
+                                    maxLength={6}
+                                    value={pin}
+                                    onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '')
+                                        setPin(val.slice(0, 6))
+                                    }}
+                                    required
+                                    minLength={6}
+                                />
+                            </div>
+
+                            {error && <div className={styles.errorBanner}>{error}</div>}
+
+                            <Button
+                                type="submit"
+                                className={styles.actionButton}
+                                isLoading={loading}
+                            >
+                                AUTHORIZE ENTRY
+                            </Button>
+
+                            <div className={styles.formFooter}>
+                                <button type="button" onClick={() => alert('PIN reset feature - check implementation_plan.md')}>Forgot PIN?</button>
+                                <span className={styles.dot} />
+                                <button type="button" onClick={() => alert('Signup feature - check implementation_plan.md')}>Request Access</button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </div>
         </main>
     )

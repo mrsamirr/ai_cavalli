@@ -47,7 +47,13 @@
   margin: 0;
 }
 
+html {
+  height: 100%;
+  overflow-x: hidden;
+}
+
 body {
+  min-height: 100%;
   color: var(--text);
   background: var(--background);
   font-family: var(--font-sans);
@@ -55,6 +61,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
   overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 h1,

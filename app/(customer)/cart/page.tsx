@@ -22,7 +22,6 @@ export default function CartPage() {
     const [tableName, setTableName] = useState('')
     const [numGuests, setNumGuests] = useState('1')
     const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>('indoor')
-    const [readyIn, setReadyIn] = useState('15')
     const [notes, setNotes] = useState('')
 
     // Load guest info from localStorage on mount
@@ -63,6 +62,10 @@ export default function CartPage() {
         try {
             const guestInfo = !user ? { name, phone } : null
 
+            // Check if cart contains the virtual regular meal item
+            const hasRegularMeal = items.some(item => item.itemId === 'REGULAR_MEAL_VIRTUAL')
+            const finalNotes = hasRegularMeal ? 'REGULAR_STAFF_MEAL' : notes
+
             // Create Order
             const { data: order, error: orderError } = await supabase
                 .from('orders')
@@ -74,27 +77,31 @@ export default function CartPage() {
                     num_guests: parseInt(numGuests) || 1,
                     status: 'pending',
                     total: total,
-                    ready_in_minutes: parseInt(readyIn),
-                    notes: notes
+                    notes: finalNotes
                 })
                 .select()
                 .single()
 
             if (orderError) throw orderError
 
-            // Create Order Items
-            const orderItems = items.map(item => ({
-                order_id: order.id,
-                menu_item_id: item.itemId,
-                quantity: item.quantity,
-                price: item.price
-            }))
+            // Create Order Items (filter out virtual regular meal item)
+            const orderItems = items
+                .filter(item => item.itemId !== 'REGULAR_MEAL_VIRTUAL')
+                .map(item => ({
+                    order_id: order.id,
+                    menu_item_id: item.itemId,
+                    quantity: item.quantity,
+                    price: item.price
+                }))
 
-            const { error: itemsError } = await supabase
-                .from('order_items')
-                .insert(orderItems)
+            // Only insert order items if there are any (regular meal might be the only item)
+            if (orderItems.length > 0) {
+                const { error: itemsError } = await supabase
+                    .from('order_items')
+                    .insert(orderItems)
 
-            if (itemsError) throw itemsError
+                if (itemsError) throw itemsError
+            }
 
             clearCart()
             if (!user) {
@@ -339,39 +346,6 @@ export default function CartPage() {
                                 value={numGuests}
                                 onChange={e => setNumGuests(e.target.value)}
                             />
-
-                            <div style={{ marginBottom: 'var(--space-2)' }}>
-                                <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)' }}>When would you like it?</label>
-                                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                                    {[
-                                        { label: 'Now', value: '0' },
-                                        { label: '15m', value: '15' },
-                                        { label: '30m', value: '30' },
-                                        { label: '1h', value: '60' }
-                                    ].map(option => (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            onClick={() => setReadyIn(option.value)}
-                                            style={{
-                                                flex: 1,
-                                                minWidth: '70px',
-                                                padding: 'var(--space-3)',
-                                                borderRadius: 'var(--radius-sm)',
-                                                border: readyIn === option.value ? '2px solid var(--primary)' : '1px solid var(--border)',
-                                                background: readyIn === option.value ? 'rgba(var(--primary-rgb), 0.05)' : 'white',
-                                                color: readyIn === option.value ? 'var(--primary)' : 'var(--text-muted)',
-                                                fontWeight: 700,
-                                                fontSize: '0.875rem',
-                                                cursor: 'pointer',
-                                                transition: 'var(--transition)'
-                                            }}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
 
                             <Input
                                 label="Special Notes"

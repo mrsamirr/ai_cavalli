@@ -27,26 +27,32 @@ CREATE POLICY "Anon view specific orders" ON public.orders FOR SELECT
 USING (auth.role() = 'anon'); 
 
 -- 2. AUTOMATED ORDER TOTALS (Fixes Data Tampering)
--- This trigger recalculates 'total' based on 'order_items' + 'discount_amount'
+-- This trigger recalculates 'total' based on 'order_items' with percentage discount
 CREATE OR REPLACE FUNCTION public.calculate_order_total()
 RETURNS TRIGGER AS $$
 DECLARE
     items_total DECIMAL(10,2);
     current_discount DECIMAL(10,2);
+    final_total DECIMAL(10,2);
 BEGIN
     -- Get sum of all items for this order
     SELECT COALESCE(SUM(quantity * price), 0) INTO items_total
     FROM public.order_items
     WHERE order_id = COALESCE(NEW.order_id, OLD.order_id);
 
-    -- Get current discount for this order
+    -- Get current discount percentage for this order
     SELECT COALESCE(discount_amount, 0) INTO current_discount
     FROM public.orders
     WHERE id = COALESCE(NEW.order_id, OLD.order_id);
 
+    -- Calculate final total with percentage discount
+    -- discount_amount is now a percentage (0-100)
+    -- Formula: total = items_total * (1 - discount_percentage/100)
+    final_total := items_total * (1 - current_discount / 100);
+
     -- Update the order total
     UPDATE public.orders
-    SET total = items_total
+    SET total = final_total
     WHERE id = COALESCE(NEW.order_id, OLD.order_id);
 
     RETURN NEW;
@@ -106,5 +112,18 @@ ORDER BY 1 DESC;
 -- 6. PERMISSIONS REFRESH
 -- Ensure anon can use the recalculation trigger (Security Definer handles this, but grant just in case)
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
-GRANT ALL ON public.orders TO anon, authenticated;
-GRANT ALL ON public.order_items TO anon, authenticated;
+-- 7. PERFORMANCE INDEXES (Scale to 1000+ users)
+-- Speeds up Kitchen Board and Status Page filters
+CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON public.order_items(order_id);
+
+-- GIN Index for Guest Info JSONB (Speeds up .contains() and -> search)
+CREATE INDEX IF NOT EXISTS idx_orders_guest_info_phone ON public.orders USING gin (guest_info);
+-- Or a B-tree on the specific extracted phone field for maximum speed
+CREATE INDEX IF NOT EXISTS idx_orders_guest_phone_extracted ON public.orders((guest_info->>'phone'));
+
+-- 8. DEPRECATE TIME SLOTS
+-- Set ready_in_minutes to NULL by default (feature removed from UI)
+ALTER TABLE public.orders ALTER COLUMN ready_in_minutes DROP NOT NULL;
+ALTER TABLE public.orders ALTER COLUMN ready_in_minutes SET DEFAULT NULL;

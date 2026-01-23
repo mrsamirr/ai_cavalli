@@ -22,7 +22,11 @@ import {
     CheckCircle2,
     Clock,
     ShoppingBag,
-    Utensils
+    Utensils,
+    Printer,
+    Pencil,
+    Percent,
+    XIcon
 } from 'lucide-react'
 import { Loading } from '@/components/ui/Loading'
 
@@ -61,6 +65,8 @@ export default function KitchenPage() {
     const [showCompleted, setShowCompleted] = useState(false)
     const [status, setStatus] = useState<string>('initializing')
     const [audioError, setAudioError] = useState(false)
+    const [editingOrderId, setEditingOrderId] = useState<string | null>(null)
+    const [menuItems, setMenuItems] = useState<any[]>([])
 
     const { signOut } = useAuth()
 
@@ -144,6 +150,19 @@ export default function KitchenPage() {
         }
     }, [])
 
+    // Fetch menu items for add item dropdown
+    useEffect(() => {
+        async function fetchMenuItems() {
+            const { data } = await supabase
+                .from('menu_items')
+                .select('*')
+                .eq('available', true)
+                .order('name')
+            setMenuItems(data || [])
+        }
+        fetchMenuItems()
+    }, [])
+
     async function fetchOrders() {
         const { data, error } = await supabase
             .from('orders')
@@ -216,6 +235,75 @@ export default function KitchenPage() {
         }
     }
 
+    // Order editing functions
+    async function updateItemQuantity(orderItemId: string, orderId: string, newQuantity: number) {
+        if (newQuantity < 1) return
+
+        console.log('Updating item quantity:', { orderItemId, orderId, newQuantity })
+
+        const { data, error } = await supabase
+            .from('order_items')
+            .update({ quantity: newQuantity })
+            .eq('id', orderItemId)
+            .select()
+
+        if (error) {
+            console.error('Update quantity error:', error)
+            alert(`Failed to update quantity: ${error.message}`)
+        } else {
+            console.log('Update successful:', data)
+            // Refresh orders to get updated total
+            await fetchOrders()
+        }
+    }
+
+    async function deleteOrderItem(orderItemId: string, orderId: string) {
+        if (!confirm('Delete this item from the order?')) return
+
+        console.log('Deleting item:', { orderItemId, orderId })
+
+        const { data, error } = await supabase
+            .from('order_items')
+            .delete()
+            .eq('id', orderItemId)
+            .select()
+
+        if (error) {
+            console.error('Delete item error:', error)
+            alert(`Failed to delete item: ${error.message}`)
+        } else {
+            console.log('Delete successful:', data)
+            // Refresh orders
+            await fetchOrders()
+        }
+    }
+
+    async function addItemToOrder(orderId: string, menuItemId: string) {
+        const menuItem = menuItems.find(m => m.id === menuItemId)
+        if (!menuItem) return
+
+        console.log('Adding item to order:', { orderId, menuItemId, menuItem })
+
+        const { data, error } = await supabase
+            .from('order_items')
+            .insert({
+                order_id: orderId,
+                menu_item_id: menuItemId,
+                quantity: 1,
+                price: menuItem.price
+            })
+            .select()
+
+        if (error) {
+            console.error('Add item error:', error)
+            alert(`Failed to add item: ${error.message}`)
+        } else {
+            console.log('Add successful:', data)
+            // Refresh orders
+            await fetchOrders()
+        }
+    }
+
     const getOrderTypeBadge = (order: Order) => {
         if (order.guest_info) return { label: 'GUEST', color: '#9333ea', icon: User }
         if (order.user?.role === 'student') return { label: 'RIDER', color: '#2563eb', icon: LayoutDashboard }
@@ -273,17 +361,6 @@ export default function KitchenPage() {
                             }}>
                                 <Sparkles size={16} style={{ marginRight: '8px', color: 'var(--primary)' }} />
                                 Specials
-                            </Button>
-                        </Link>
-                        <Link href="/admin">
-                            <Button variant="outline" size="sm" style={{
-                                borderRadius: '12px',
-                                fontWeight: '700',
-                                border: '1px solid rgba(var(--primary-rgb), 0.2)',
-                                background: 'white'
-                            }}>
-                                <LayoutDashboard size={16} style={{ marginRight: '8px', color: 'var(--primary)' }} />
-                                Admin
                             </Button>
                         </Link>
                     </div>
@@ -480,20 +557,6 @@ export default function KitchenPage() {
                                             <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>
                                                 {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
-                                            <div style={{
-                                                fontSize: '0.75rem',
-                                                fontWeight: 800,
-                                                color: 'var(--primary)',
-                                                background: 'rgba(var(--primary-rgb), 0.1)',
-                                                padding: '2px 6px',
-                                                borderRadius: '4px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '4px'
-                                            }}>
-                                                <Clock size={10} />
-                                                <span>{order.ready_in_minutes} MIN SLOT</span>
-                                            </div>
                                         </div>
                                         <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>ORDER #{order.id.slice(0, 8).toUpperCase()}</p>
                                     </div>
@@ -503,21 +566,97 @@ export default function KitchenPage() {
                                     <div style={{ marginBottom: 'var(--space-4)' }}>
                                         <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>ORDER ITEMS</p>
                                         <div style={{ background: 'var(--background)', borderRadius: 'var(--radius)', padding: 'var(--space-3)' }}>
-                                            {order.notes === 'REGULAR_STAFF_MEAL' ? (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)' }}>
-                                                    <Utensils size={20} color="#3B82F6" />
-                                                    <div>
-                                                        <div style={{ fontWeight: 800, color: '#3B82F6', fontSize: '1.125rem' }}>Standard Regular Meal</div>
-                                                        <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Fixed staff daily menu</div>
-                                                    </div>
+                                            {editingOrderId === order.id ? (
+                                                // Edit mode
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    {/* Show regular meal badge if this is a regular meal */}
+                                                    {order.notes === 'REGULAR_STAFF_MEAL' && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)', marginBottom: '4px' }}>
+                                                            <Utensils size={20} color="#3B82F6" />
+                                                            <div>
+                                                                <div style={{ fontWeight: 800, color: '#3B82F6', fontSize: '1rem' }}>Standard Regular Meal</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Base meal + additional items below</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {order.items?.map((item: any) => (
+                                                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                                            <span style={{ flex: 1, fontWeight: 600 }}>{item.menu_item?.name}</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault()
+                                                                        e.stopPropagation()
+                                                                        updateItemQuantity(item.id, order.id, item.quantity - 1)
+                                                                    }}
+                                                                    type="button"
+                                                                    style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', fontWeight: 700 }}
+                                                                    disabled={item.quantity <= 1}
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span style={{ minWidth: '30px', textAlign: 'center', fontWeight: 700 }}>{item.quantity}</span>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault()
+                                                                        e.stopPropagation()
+                                                                        updateItemQuantity(item.id, order.id, item.quantity + 1)
+                                                                    }}
+                                                                    type="button"
+                                                                    style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', fontWeight: 700 }}
+                                                                >
+                                                                    +
+                                                                </button>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault()
+                                                                        e.stopPropagation()
+                                                                        deleteOrderItem(item.id, order.id)
+                                                                    }}
+                                                                    type="button"
+                                                                    style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #DC2626', background: 'white', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                                    title="Delete item"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {/* Add item dropdown */}
+                                                    <select
+                                                        onChange={(e) => {
+                                                            if (e.target.value) {
+                                                                addItemToOrder(order.id, e.target.value)
+                                                                e.target.value = ''
+                                                            }
+                                                        }}
+                                                        style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', fontWeight: 600, cursor: 'pointer' }}
+                                                    >
+                                                        <option value="">+ Add Item</option>
+                                                        {menuItems.map(item => (
+                                                            <option key={item.id} value={item.id}>{item.name} - ₹{item.price}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                             ) : (
-                                                order.items?.map((item: any) => (
-                                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
-                                                        <span>{item.menu_item?.name}</span>
-                                                        <span style={{ color: 'var(--primary)' }}>x{item.quantity}</span>
-                                                    </div>
-                                                ))
+                                                // View mode
+                                                <>
+                                                    {order.notes === 'REGULAR_STAFF_MEAL' && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)', marginBottom: '8px' }}>
+                                                            <Utensils size={20} color="#3B82F6" />
+                                                            <div>
+                                                                <div style={{ fontWeight: 800, color: '#3B82F6', fontSize: '1rem' }}>Standard Regular Meal</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Base meal + additional items below</div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {order.items?.map((item: any) => (
+                                                        <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+                                                            <span>{item.menu_item?.name}</span>
+                                                            <span style={{ color: 'var(--primary)' }}>x{item.quantity}</span>
+                                                        </div>
+                                                    ))}
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -562,51 +701,145 @@ export default function KitchenPage() {
                                         </div>
                                     </div>
 
+
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid var(--border-light)', paddingTop: 'var(--space-3)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                            <span>Original Amount</span>
-                                            <span>₹{order.total.toFixed(2)}</span>
-                                        </div>
-                                        {order.discount_amount > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#DC2626', fontWeight: 600 }}>
-                                                <span>Staff/Rider Discount</span>
-                                                <span>-₹{order.discount_amount.toFixed(2)}</span>
-                                            </div>
-                                        )}
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', fontWeight: 800, marginTop: '2px' }}>
-                                            <span>Final Total</span>
-                                            <span style={{ color: 'var(--primary)' }}>₹{(order.total - (order.discount_amount || 0)).toFixed(2)}</span>
-                                        </div>
+                                        {(() => {
+                                            // Calculate items total (before discount)
+                                            const itemsTotal = order.items?.reduce((sum, item: any) => sum + (item.price * item.quantity), 0) || 0
+                                            // Calculate discount amount
+                                            const discountAmount = order.discount_amount > 0 ? itemsTotal * (order.discount_amount / 100) : 0
+                                            // Final total after discount
+                                            const finalTotal = itemsTotal - discountAmount
+
+                                            return (
+                                                <>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                        <span>Items Total</span>
+                                                        <span>₹{itemsTotal.toFixed(2)}</span>
+                                                    </div>
+                                                    {order.discount_amount > 0 && (
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#DC2626', fontWeight: 600 }}>
+                                                            <span>Staff/Rider Discount ({order.discount_amount}%)</span>
+                                                            <span>-₹{discountAmount.toFixed(2)}</span>
+                                                        </div>
+                                                    )}
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', fontWeight: 800, marginTop: '2px' }}>
+                                                        <span>Final Total</span>
+                                                        <span style={{ color: 'var(--primary)' }}>₹{finalTotal.toFixed(2)}</span>
+                                                    </div>
+                                                </>
+                                            )
+                                        })()}
                                     </div>
+
                                 </div>
 
                                 {!showCompleted && (
-                                    <div style={{ padding: 'var(--space-4)', background: '#F9FAFB', borderTop: '1px solid var(--border)', display: 'flex', gap: 'var(--space-3)' }}>
-                                        {order.status === 'pending' && (
-                                            <Button onClick={() => updateStatus(order.id, 'preparing')} size="lg" style={{ flex: 1, height: '48px', fontWeight: 800 }}>
-                                                START COOKING
-                                            </Button>
-                                        )}
-                                        {order.status === 'preparing' && (
-                                            <Button onClick={() => updateStatus(order.id, 'ready')} size="lg" style={{ flex: 1, height: '48px', fontWeight: 800, background: '#10B981' }}>
-                                                MARK AS READY
-                                            </Button>
-                                        )}
-                                        {order.status === 'ready' && (
-                                            <Button onClick={() => updateStatus(order.id, 'completed')} size="lg" variant="outline" style={{ flex: 1, height: '48px', fontWeight: 800, color: 'var(--text)' }}>
-                                                HAND OVER
-                                            </Button>
-                                        )}
-                                        <button
-                                            onClick={() => {
-                                                const amount = prompt('Enter discount amount:')
-                                                if (amount) updateDiscount(order.id, parseFloat(amount))
-                                            }}
-                                            style={{ width: '48px', height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}
-                                            title="Apply Discount"
-                                        >
-                                            %
-                                        </button>
+                                    <div style={{
+                                        padding: 'var(--space-4)',
+                                        background: '#F9FAFB',
+                                        borderTop: '1px solid var(--border)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: 'var(--space-3)'
+                                    }}>
+                                        {/* Primary Action Button */}
+                                        <div style={{ width: '100%' }}>
+                                            {order.status === 'pending' && (
+                                                <Button onClick={() => updateStatus(order.id, 'preparing')} size="lg" style={{ width: '100%', height: '56px', fontWeight: 800 }}>
+                                                    START COOKING
+                                                </Button>
+                                            )}
+                                            {order.status === 'preparing' && (
+                                                <Button onClick={() => updateStatus(order.id, 'ready')} size="lg" style={{ width: '100%', height: '56px', fontWeight: 800, background: '#10B981', border: 'none', color: 'white' }}>
+                                                    MARK AS READY
+                                                </Button>
+                                            )}
+                                            {order.status === 'ready' && (
+                                                <Button onClick={() => updateStatus(order.id, 'completed')} size="lg" variant="outline" style={{ width: '100%', height: '56px', fontWeight: 800, color: 'var(--text)', border: '2px solid var(--border)' }}>
+                                                    HAND OVER
+                                                </Button>
+                                            )}
+                                        </div>
+
+                                        {/* Secondary Actions - Clean Grid */}
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '56px 1fr 1fr',
+                                            gap: 'var(--space-2)'
+                                        }}>
+                                            <button
+                                                onClick={() => {
+                                                    const percentage = prompt('Enter discount percentage (0-100):')
+                                                    if (percentage) updateDiscount(order.id, parseFloat(percentage))
+                                                }}
+                                                style={{
+                                                    height: '48px',
+                                                    borderRadius: 'var(--radius)',
+                                                    border: '1px solid var(--border)',
+                                                    background: 'white',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: 'var(--text-muted)'
+                                                }}
+                                                title="Apply Discount"
+                                            >
+                                                <Percent size={18} />
+                                            </button>
+
+                                            <button
+                                                onClick={() => setEditingOrderId(editingOrderId === order.id ? null : order.id)}
+                                                style={{
+                                                    height: '48px',
+                                                    borderRadius: 'var(--radius)',
+                                                    border: `1px solid ${editingOrderId === order.id ? '#DC2626' : 'var(--border)'}`,
+                                                    background: editingOrderId === order.id ? '#FEE2E2' : 'white',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                    color: editingOrderId === order.id ? '#DC2626' : 'var(--text)',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.875rem'
+                                                }}
+                                            >
+                                                {editingOrderId === order.id ? (
+                                                    <>
+                                                        <XIcon size={16} />
+                                                        Cancel
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Pencil size={16} />
+                                                        Edit
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            <button
+                                                onClick={() => alert('Bill generation connected to ESSAE printer')}
+                                                style={{
+                                                    height: '48px',
+                                                    borderRadius: 'var(--radius)',
+                                                    border: '1px solid var(--border)',
+                                                    background: 'white',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                    color: 'var(--text)',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.875rem'
+                                                }}
+                                            >
+                                                <Printer size={16} />
+                                                Bill
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>

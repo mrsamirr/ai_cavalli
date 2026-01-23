@@ -256,11 +256,11 @@ export default function ProfilePage() {
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                             {order.discount_amount > 0 && (
                                                 <div style={{ fontSize: '0.75rem', color: '#DC2626', fontWeight: 600 }}>
-                                                    Discount: -₹{order.discount_amount.toFixed(2)}
+                                                    Discount: -{order.discount_amount}%
                                                 </div>
                                             )}
                                             <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--primary)' }}>
-                                                ₹{(order.total - (order.discount_amount || 0)).toFixed(2)}
+                                                ₹{order.total.toFixed(2)}
                                             </span>
                                         </div>
                                     </div>

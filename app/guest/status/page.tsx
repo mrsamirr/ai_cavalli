@@ -197,12 +197,12 @@ function GuestOrderContent() {
                             {order?.discount_amount > 0 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#DC2626', fontWeight: 600 }}>
                                     <span>Discount</span>
-                                    <span>-₹{order?.discount_amount?.toFixed(2)}</span>
+                                    <span>-{order?.discount_amount}%</span>
                                 </div>
                             )}
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--primary)' }}>
                                 <span>Total</span>
-                                <span>₹{(order?.total - (order?.discount_amount || 0)).toFixed(2)}</span>
+                                <span>₹{order?.total?.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
@@ -246,7 +246,7 @@ function GuestOrderContent() {
                                     </div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.9rem' }}>₹{(prev.total - (prev.discount_amount || 0)).toFixed(2)}</div>
+                                    <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.9rem' }}>₹{prev.total.toFixed(2)}</div>
                                     <div style={{
                                         fontSize: '0.7rem',
                                         textTransform: 'uppercase',

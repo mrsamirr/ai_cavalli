@@ -20,7 +20,6 @@ export default function GuestCartPage() {
     const [tableName, setTableName] = useState('')
     const [numGuests, setNumGuests] = useState('1')
     const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>('indoor')
-    const [readyIn, setReadyIn] = useState('15')
     const [notes, setNotes] = useState('')
 
     // Persistence: Load from localStorage on mount
@@ -95,7 +94,6 @@ export default function GuestCartPage() {
                     num_guests: parseInt(numGuests) || 1,
                     status: 'pending',
                     total: total,
-                    ready_in_minutes: parseInt(readyIn),
                     notes: notes
                 })
                 .select()
@@ -252,40 +250,9 @@ export default function GuestCartPage() {
                         onChange={e => updateNumGuests(e.target.value)}
                     />
 
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Ready In</label>
-                        {/* ... Ready In Options ... */}
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {[
-                                { label: 'Now', value: '0' },
-                                { label: '15m', value: '15' },
-                                { label: '30m', value: '30' },
-                                { label: '1h', value: '60' }
-                            ].map(option => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => setReadyIn(option.value)}
-                                    style={{
-                                        flex: 1,
-                                        minWidth: '70px',
-                                        padding: '0.75rem',
-                                        borderRadius: 'var(--radius)',
-                                        border: readyIn === option.value ? '2px solid var(--primary)' : '1px solid var(--border)',
-                                        background: readyIn === option.value ? 'rgba(192, 39, 45, 0.05)' : 'white',
-                                        color: readyIn === option.value ? 'var(--primary)' : 'inherit',
-                                        fontWeight: readyIn === option.value ? 'bold' : 'normal',
-                                        cursor: 'pointer',
-                                        transition: '0.2s'
-                                    }}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <textarea
 
-                    <Input
+                        <Input
                         label="Notes (Optional)"
                         placeholder="e.g. No salt..."
                         value={notes}

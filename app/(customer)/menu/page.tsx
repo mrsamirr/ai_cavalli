@@ -119,84 +119,50 @@ export default function MenuPage() {
         })
     }, [fixedMenuItems, searchQuery])
 
+    // Create virtual Regular Meal item for staff
+    const regularMealItem: MenuItem | null = useMemo(() => {
+        if (role !== 'staff') return null
+        return {
+            id: 'REGULAR_MEAL_VIRTUAL',
+            name: 'Regular Staff Meal',
+            description: 'Standard meal for staff members (Free)',
+            price: 0,
+            image_url: '',
+            available: true
+        }
+    }, [role])
+
     const handleAddToCart = (item: MenuItem) => {
         addToCart(item)
-    }
-
-    const orderRegularMeal = async () => {
-        if (!user || role !== 'staff') return
-        if (!confirm('Order your regular staff meal?')) return
-
-        setIsOrderingMeal(true)
-        try {
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .insert({
-                    user_id: user.id,
-                    table_name: 'Staff Table',
-                    status: 'pending',
-                    total: 0,
-                    ready_in_minutes: 15,
-                    notes: 'REGULAR_STAFF_MEAL',
-                    num_guests: 1,
-                    location_type: 'indoor'
-                })
-                .select()
-                .single()
-
-            if (orderError) throw orderError
-
-            // Optionally add a dummy item for history
-            await supabase.from('order_items').insert({
-                order_id: order.id,
-                menu_item_id: null, // We'll handle this in kitchen UI
-                quantity: 1,
-                price: 0
-            })
-
-            alert('Regular meal ordered successfully!')
-            router.push('/orders')
-        } catch (err: any) {
-            console.error('Failed to order regular meal:', err)
-            alert('Failed to place order: ' + (err.message || 'Unknown error'))
-        } finally {
-            setIsOrderingMeal(false)
-        }
     }
 
     if (loading) {
         return <Loading fullScreen message="Preparing the menu..." />
     }
+    const ITALIAN_RED = '#A91E22';
+    const DEEP_BLACK = '#1A1A1A';
+    const PAGE_BG = '#FDFBF7';
 
     return (
         <div className="container fade-in" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-12)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <Link href="/home" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}>
-                        <ChevronLeft size={32} />
-                    </Link>
-                    <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontFamily: 'var(--font-serif)' }}>Menu</h1>
-                </div>
+                {/* Header: Editorial Style */}
+                <header className="container" style={{ paddingTop: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', }}>
+                        <Link href="/home" style={{ color: ITALIAN_RED, transition: 'transform 0.2s' }} className="hover-scale">
+                            <ChevronLeft size={32} strokeWidth={1.5} />
+                        </Link>
+                        <div>
+                            <span style={{ letterSpacing: '0.4em', fontSize: '0.65rem', color: '#888', textTransform: 'uppercase' }}>
+                                Ai Cavalli Ristorante
+                            </span>
+                            <h1 style={{ margin: 0, fontSize: '3rem', fontFamily: 'var(--font-serif)', fontWeight: 400 }}>
+                                La Carta
+                            </h1>
+                        </div>
+                    </div>
+                </header>
 
-                {role === 'staff' && (
-                    <Button
-                        onClick={orderRegularMeal}
-                        isLoading={isOrderingMeal}
-                        style={{
-                            borderRadius: '16px',
-                            background: 'white',
-                            color: 'var(--primary)',
-                            border: '2px solid var(--primary)',
-                            fontWeight: '800',
-                            padding: '0 1.5rem',
-                            height: '48px',
-                            boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.1)'
-                        }}
-                    >
-                        <Utensils size={18} style={{ marginRight: '8px' }} />
-                        Order Regular Meal
-                    </Button>
-                )}
             </div>
 
             <div style={{
@@ -239,6 +205,20 @@ export default function MenuPage() {
                     ))}
                 </div>
             </div>
+
+            {/* Regular Meal Section - Only for Staff */}
+            {regularMealItem && (
+                <div style={{ marginBottom: 'var(--space-10)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                        <div style={{ width: '8px', height: '24px', background: '#059669', borderRadius: '4px' }} />
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--text)' }}>Regular Staff Meal</h2>
+                    </div>
+                    <div className="menu-grid">
+                        <MenuItemCard item={regularMealItem} onAdd={handleAddToCart} />
+                    </div>
+                    <div style={{ height: '1px', background: 'var(--border-light)', margin: 'var(--space-8) 0' }} />
+                </div>
+            )}
 
             {/* Specials Highlight Section */}
             {specials.length > 0 && !searchQuery && (activeCategory === 'all' || activeCategory === 'specials' || (categories.find(c => c.name === "Today's Specials")?.id === activeCategory)) && (

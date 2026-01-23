@@ -3,145 +3,303 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
-    background-color: var(--background);
-    background-image: var(--texture-overlay);
-}
-
-.container {
-    width: 100%;
-    max-width: 600px;
-    /* Wider for side-by-side */
-    text-align: center;
-}
-
-.card {
-    width: 100%;
-    max-width: 400px;
-    background: var(--surface);
-    padding: 2.5rem;
-    border-radius: var(--radius);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--border);
-    text-align: center;
+    background: #080808;
+    background-image: url('https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2000');
+    background-size: cover;
+    background-position: center;
     position: relative;
+    font-family: var(--font-sans);
 }
 
-.title {
-    font-family: var(--font-serif);
-    font-size: 2.5rem;
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.95) 100%);
+    backdrop-filter: blur(12px);
+}
+
+.contentWrapper {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 480px;
+    padding: 2rem;
+}
+
+/* Header */
+.overline {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    font-size: 0.7rem;
+    color: #A91E22;
     margin-bottom: 0.5rem;
-    color: var(--primary);
+    font-weight: 700;
 }
 
-.subtitle {
-    color: var(--text-muted);
+.brandTitle {
+    font-family: var(--font-serif);
+    font-size: 4rem;
+    color: #FDFBF7;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -1.5px;
+}
+
+.brandSubtitle {
+    color: rgba(253, 251, 247, 0.4);
+    letter-spacing: 2px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    margin-top: 1rem;
     margin-bottom: 3rem;
+}
+
+/* Role Cards */
+.roleGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.premiumCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    text-align: left;
+    width: 100%;
+}
+
+.premiumCard:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #A91E22;
+    transform: translateX(8px);
+}
+
+.iconCircle {
+    width: 48px;
+    height: 48px;
+    background: rgba(169, 30, 34, 0.1);
+    color: #A91E22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.cardText h3 {
+    color: #FDFBF7;
+    margin: 0;
     font-size: 1.1rem;
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 3rem;
+.cardText p {
+    color: rgba(253, 251, 247, 0.3);
+    margin: 0;
+    font-size: 0.8rem;
 }
 
-.roleCard {
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: var(--radius);
-    padding: 2rem;
+/* Authorized Access Footer */
+.selectFooter {
+    margin-top: 3.5rem;
+    width: 100%;
+}
+
+.divider {
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 1rem;
+    margin-bottom: 1.25rem;
+    opacity: 0.3;
+}
+
+.dividerLine {
+    flex: 1;
+    height: 1px;
+    background: #FDFBF7;
+}
+
+.dividerText {
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #FDFBF7;
+}
+
+.staffProceedButton {
+    width: 100%;
+    background: rgba(169, 30, 34, 0.05);
+    border: 1px solid rgba(169, 30, 34, 0.2);
+    padding: 1.25rem;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
-.roleCard:hover {
-    border-color: var(--primary);
-    transform: translateY(-4px);
-    box-shadow: 0 4px 12px rgba(192, 39, 45, 0.15);
+.staffProceedButton:hover {
+    background: rgba(169, 30, 34, 0.15);
+    border-color: #A91E22;
 }
 
-.roleCard span {
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: var(--foreground);
-}
-
-.icon {
-    color: var(--primary);
-}
-
-.footer {
-    display: flex;
-    justify-content: center;
-    margin-top: 2rem;
-}
-
-.staffLink {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    cursor: pointer;
+.staffButtonContent {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    transition: background 0.2s;
+    justify-content: center;
+    gap: 1rem;
 }
 
-.staffLink:hover {
-    background: rgba(0, 0, 0, 0.05);
-    color: var(--foreground);
+.staffIcon {
+    color: #A91E22;
 }
 
-.form {
+.staffButtonText {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
     text-align: left;
 }
 
-.error {
-    color: red;
-    font-size: 0.875rem;
-    text-align: center;
-    background: #fff0f0;
-    padding: 0.75rem;
-    border-radius: 0.25rem;
-    border: 1px solid #ffcaca;
+.staffButtonText span {
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: #FDFBF7;
+    text-transform: uppercase;
 }
 
-.button {
-    width: 100%;
-    margin-top: 0.5rem;
+.staffButtonText small {
+    font-size: 0.6rem;
+    color: rgba(253, 251, 247, 0.4);
+    text-transform: uppercase;
+    margin-top: 2px;
 }
 
-.backButton {
+/* Auth Form Card */
+.authCard {
+    background: #FDFBF7;
+    padding: 3.5rem 2.5rem;
+    border-radius: 2px;
+    color: #1A1A1A;
+    position: relative;
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+
+.backArrow {
     position: absolute;
-    top: 1rem;
-    left: 1rem;
+    top: 1.5rem;
+    left: 1.5rem;
     background: none;
     border: none;
+    color: #A91E22;
     cursor: pointer;
-    color: var(--text-muted);
-    font-weight: 500;
 }
 
-.backButton:hover {
-    color: var(--foreground);
+.cardTitle {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    margin-bottom: 0.5rem;
 }
 
-/* Mobile Responsiveness */
-@media (max-width: 600px) {
-    .grid {
-        grid-template-columns: 1fr;
-        /* Stack on mobile */
+.cardSubtitle {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #888;
+    margin-bottom: 2.5rem;
+}
+
+.inputGroup {
+    margin-bottom: 1.5rem;
+}
+
+.inputGroup label {
+    display: block;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #BBB;
+    margin-bottom: 0.5rem;
+}
+
+.inputGroup input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #DDD;
+    padding: 0.5rem 0;
+    font-size: 1.2rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.inputGroup input:focus {
+    border-color: #A91E22;
+}
+
+.actionButton {
+    background: #1A1A1A !important;
+    color: #FDFBF7 !important;
+    width: 100%;
+    height: 56px !important;
+    letter-spacing: 3px;
+    font-weight: 700;
+    border-radius: 0 !important;
+    margin-top: 1rem;
+}
+
+.formFooter {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.formFooter button {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+.dot {
+    width: 3px;
+    height: 3px;
+    background: #DDD;
+    border-radius: 50%;
+    align-self: center;
+}
+
+@keyframes reveal {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+        filter: blur(10px);
     }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(0);
+    }
+}
+
+.animate-reveal {
+    animation: reveal 1s ease forwards;
+}
+
+.errorBanner {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    color: #DC2626;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    text-align: center;
+    margin-bottom: 1rem;
 }
