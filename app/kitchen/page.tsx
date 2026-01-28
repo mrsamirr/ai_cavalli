@@ -520,11 +520,10 @@ export default function KitchenPage() {
                     padding: 'var(--space-4)',
                     borderRadius: '16px',
                     marginBottom: 'var(--space-4)',
-                    boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)',
-                    animation: 'pulse 2s infinite'
+                    boxShadow: '0 8px 32px rgba(16, 185, 129, 0.3)'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                        <BellRing size={24} color="white" style={{ animation: 'shake 0.5s ease-in-out infinite' }} />
+                        <BellRing size={24} color="white" />
                         <h3 style={{ margin: 0, color: 'white', fontSize: '1.25rem', fontWeight: 800 }}>
                             BILL REQUESTS ({billRequests.length})
                         </h3>

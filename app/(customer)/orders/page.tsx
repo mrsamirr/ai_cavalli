@@ -110,51 +110,40 @@ export default function OrdersPage() {
             return
         }
 
-        // CASE 2: No active session BUT orders exist (Unexpected state)
-        if (!activeSession && orders.length > 0) {
-            alert(
-                "Active session not found in system.\n\n" +
-                "However, we see you have placed active orders. Please contact our staff or try signing out and back in if this is an error."
-            )
+        // CASE 2: No orders to bill
+        if (orders.length === 0) {
+            alert("You haven't placed any orders yet. Please place an order first.")
             return
         }
 
-        // CASE 3: Active session exists
+        // CASE 3: Active session exists with orders
         const confirmed = confirm(
-            "Finalize your meal and get the bill?\n\n" +
-            "Clicking this will result in ending your session and you will get the bill with a UPI code sent to your WhatsApp number."
+            "Request your bill?\n\n" +
+            "A waiter will bring the bill to your table. You can still add more orders if you change your mind."
         )
 
         if (!confirmed) return
 
         setEndingSession(true)
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const token = session?.access_token
-
-            const response = await fetch('/api/sessions/end', {
+            const response = await fetch('/api/bills/request', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionId: activeSession.id,
-                    paymentMethod: 'upi'
+                    userId: user?.id
                 })
             })
 
             const data = await response.json()
             if (data.success) {
-                alert(data.message || "Session ended! Check your WhatsApp for the bill.")
-                clearCart()
-                signOut()
+                alert(data.message || "Bill request sent! A waiter will bring your bill shortly.")
             } else {
-                alert(`Failed to end session: ${data.error}`)
+                alert(`Failed to request bill: ${data.error}`)
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to process bill request.")
+            alert("Failed to request bill. Please ask a waiter directly.")
         } finally {
             setEndingSession(false)
         }
