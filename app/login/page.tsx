@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { useAuth } from '@/lib/auth/context'
 import { Button } from '@/components/ui/button'
-import { User, KeyRound, Utensils, ArrowLeft, ShieldCheck, Phone, Users, Hash } from 'lucide-react'
+import { User, KeyRound, Utensils, ArrowLeft, ShieldCheck } from 'lucide-react'
 import styles from './page.module.css'
 
 export default function LoginPage() {
@@ -25,7 +24,6 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false)
 
     const { signIn } = useAuth()
-    const router = useRouter()
 
     const handleRoleSelect = (role: 'student' | 'staff' | 'guest') => {
         setLoginRole(role)
@@ -63,10 +61,12 @@ export default function LoginPage() {
                 // Store session info for cart and orders
                 localStorage.setItem('user', JSON.stringify(data.user))
                 localStorage.setItem('guest_session', JSON.stringify(data.session))
+                localStorage.setItem('guest_phone', guestPhone)
                 localStorage.setItem('is_guest_active', 'true')
 
                 signIn(data.user)
-                window.location.href = '/home'
+                // Guests use the guest portal
+                window.location.href = '/guest/home'
             } else {
                 setError(data.error || 'Login failed. Please try again.')
             }
@@ -92,18 +92,23 @@ export default function LoginPage() {
             const data = await response.json()
 
             if (data.success) {
+                // Session cookies are set server-side by the SSR client
                 localStorage.setItem('user', JSON.stringify(data.user))
                 signIn(data.user)
 
-                if (data.user.role === 'kitchen_manager' || data.user.role === 'admin' || data.user.role === 'staff') {
-                    window.location.href = '/kitchen'
-                } else {
-                    window.location.href = '/home'
-                }
+                // Redirect based on role
+                const targetUrl = (data.user.role === 'kitchen_manager' || data.user.role === 'admin' || data.user.role === 'staff')
+                    ? '/kitchen'
+                    : '/home'
+
+                // Use replace to prevent back button issues
+                window.location.replace(targetUrl)
+                return // Important: exit the function after redirect
             } else {
                 setError(data.error || 'Invalid phone or PIN')
             }
         } catch (err) {
+            console.error('Login error:', err)
             setError('Network error. Please try again.')
         } finally {
             setLoading(false)

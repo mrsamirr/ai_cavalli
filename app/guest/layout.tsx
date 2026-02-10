@@ -14,17 +14,37 @@ export default function GuestLayout({
     const router = useRouter()
 
     useEffect(() => {
-        if (!isLoading && !user) {
-            // No authenticated user - redirect to login
-            router.push('/login')
+        if (!isLoading) {
+            if (!user) {
+                // No authenticated user - redirect to login
+                router.push('/login')
+            } else if (user.role !== 'guest') {
+                // Non-guest users should use appropriate portal
+                if (user.role === 'admin') {
+                    router.push('/admin')
+                } else if (user.role === 'kitchen_manager' || user.role === 'staff') {
+                    router.push('/kitchen')
+                } else {
+                    // student role
+                    router.push('/home')
+                }
+            }
         }
     }, [user, isLoading, router])
 
     if (isLoading) {
-        return <div className="loading-screen">Loading...</div>
+        return <div className="loading-screen" style={{
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'var(--background)',
+            color: 'var(--text-muted)'
+        }}>Loading...</div>
     }
 
-    if (!user) {
+    // Only render for guest users
+    if (!user || user.role !== 'guest') {
         return null
     }
 

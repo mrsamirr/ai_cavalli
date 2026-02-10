@@ -18,6 +18,39 @@ export async function POST(request: NextRequest) {
         // Use service role client to bypass RLS for bill generation
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+        // AUTH GUARD: Only staff, kitchen_manager, or admin can generate bills
+        const authHeader = request.headers.get('Authorization')
+        if (!authHeader) {
+            return NextResponse.json(
+                { success: false, error: 'Authorization required' },
+                { status: 401 }
+            )
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const { data: { user: requester }, error: authError } = await supabase.auth.getUser(token)
+
+        if (authError || !requester) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid or expired session' },
+                { status: 401 }
+            )
+        }
+
+        // Verify role
+        const { data: profile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', requester.id)
+            .single()
+
+        if (!profile || !['staff', 'kitchen_manager', 'admin'].includes(profile.role)) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized: Staff access required' },
+                { status: 403 }
+            )
+        }
+
         // 1. Fetch the order with items
         const { data: order, error: orderError } = await supabase
             .from('orders')

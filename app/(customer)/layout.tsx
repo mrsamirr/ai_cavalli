@@ -18,15 +18,18 @@ export default function CustomerLayout({
             if (!user) {
                 // No authenticated user - redirect to login
                 router.push('/login')
+            } else if (user.role === 'guest') {
+                // Guests should use guest portal
+                router.push('/guest/home')
             } else if (user.role === 'kitchen_manager' || user.role === 'admin') {
                 // Kitchen/admin users should use kitchen portal
                 router.push('/kitchen')
             }
-            // Students, staff, and guests can access customer portal
+            // Only students and staff can access customer portal
         }
     }, [user, isLoading, router])
 
-    if (!user && isLoading) {
+    if (isLoading) {
         return <div className="loading-screen" style={{
             height: '100vh',
             display: 'flex',
@@ -37,7 +40,10 @@ export default function CustomerLayout({
         }}>Loading...</div>
     }
 
-    if (!user) return null
+    // Only render for student and staff roles
+    if (!user || user.role === 'guest' || user.role === 'kitchen_manager' || user.role === 'admin') {
+        return null
+    }
 
     return (
         <div style={{ paddingBottom: '80px' }}>

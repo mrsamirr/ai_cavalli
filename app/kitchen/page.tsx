@@ -131,9 +131,9 @@ export default function KitchenPage() {
         return data
     }
 
-    // Auth Guard
+    // Auth Guard - Allow staff, kitchen_manager, and admin
     useEffect(() => {
-        if (!authLoading && (!user || (user.role !== 'kitchen_manager' && user.role !== 'admin'))) {
+        if (!authLoading && (!user || (user.role !== 'kitchen_manager' && user.role !== 'admin' && user.role !== 'staff'))) {
             router.push('/home')
         }
     }, [user, authLoading, router])
@@ -405,7 +405,7 @@ export default function KitchenPage() {
     }
 
     if (authLoading || loading) return <Loading fullScreen message="Syncing with Kitchen..." />
-    if (!user || (user.role !== 'kitchen_manager' && user.role !== 'admin')) return null
+    if (!user || (user.role !== 'kitchen_manager' && user.role !== 'admin' && user.role !== 'staff')) return null
 
     return (
         <div className="fade-in" style={{ padding: 'var(--space-4)', background: 'var(--background)', minHeight: '100vh' }}>

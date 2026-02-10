@@ -24,6 +24,48 @@ export async function POST(request: NextRequest) {
 
         const supabase = createClient(supabaseUrl, supabaseKey)
 
+        // AUTH GUARD: Verify requester
+        // Allow either:
+        // 1. Authenticated Supabase user (staff or guest with session match)
+        // 2. Guest with matching session userId
+        let isAuthorized = false
+        let requesterRole = null
+
+        const authHeader = request.headers.get('Authorization')
+        if (authHeader && authHeader !== 'Bearer null' && authHeader !== 'Bearer undefined') {
+            const token = authHeader.replace('Bearer ', '')
+            const { data: { user: requester } } = await supabase.auth.getUser(token)
+
+            if (requester) {
+                const { data: profile } = await supabase
+                    .from('users')
+                    .select('role')
+                    .eq('id', requester.id)
+                    .single()
+
+                if (profile) {
+                    requesterRole = profile.role
+                    // Staff can request bills for any session
+                    if (['staff', 'kitchen_manager', 'admin'].includes(profile.role)) {
+                        isAuthorized = true
+                    }
+                }
+            }
+        }
+
+        // If not staff authorized, check if userId matches session owner
+        if (!isAuthorized && userId) {
+            // Will verify ownership after fetching session
+            isAuthorized = true // Temporary, verified below
+        }
+
+        if (!isAuthorized) {
+            return NextResponse.json(
+                { success: false, error: 'Authorization required' },
+                { status: 401 }
+            )
+        }
+
         // Fetch session with orders
         const { data: session, error: sessionError } = await supabase
             .from('guest_sessions')
@@ -51,6 +93,25 @@ export async function POST(request: NextRequest) {
                 { success: false, error: 'Active session not found' },
                 { status: 404 }
             )
+        }
+
+        // OWNERSHIP CHECK: If not staff, verify userId matches session owner
+        if (requesterRole && !['staff', 'kitchen_manager', 'admin'].includes(requesterRole)) {
+            // Non-staff user, verify ownership
+            if (session.user_id !== userId) {
+                return NextResponse.json(
+                    { success: false, error: 'Unauthorized: You can only request bills for your own session' },
+                    { status: 403 }
+                )
+            }
+        } else if (!requesterRole && userId) {
+            // Guest without Supabase auth, verify userId matches
+            if (session.user_id !== userId) {
+                return NextResponse.json(
+                    { success: false, error: 'Unauthorized: Session mismatch' },
+                    { status: 403 }
+                )
+            }
         }
 
         // Calculate total from orders
