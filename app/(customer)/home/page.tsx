@@ -33,7 +33,7 @@ export default function CustomerHomePage() {
             setLoadingAnnouncements(false)
         }
         async function fetchActiveSession() {
-            if (user?.role === 'guest') {
+            if (user?.role === 'OUTSIDER') {
                 try {
                     const { data: { session: currentSession } } = await supabase.auth.getSession()
                     const token = currentSession?.access_token
@@ -152,7 +152,7 @@ export default function CustomerHomePage() {
 
             {/* 2. News Section (Il Giornale) */}
             <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '100px 24px' }} id="journal">
-                {user?.role === 'guest' && activeSession && (
+                {user?.role === 'OUTSIDER' && activeSession && (
                     <div className="hover-lift" style={{
                         marginBottom: '80px',
                         background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',

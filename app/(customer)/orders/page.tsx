@@ -13,7 +13,7 @@ import { Utensils, Receipt } from 'lucide-react'
 import { useCart } from '@/lib/context/CartContext'
 
 export default function OrdersPage() {
-    const { user, signOut } = useAuth()
+    const { user, logout } = useAuth()
     const { clearCart } = useCart()
     const searchParams = useSearchParams()
     const orderIdParam = searchParams.get('orderId')
@@ -52,7 +52,7 @@ export default function OrdersPage() {
         }
 
         async function fetchActiveSession() {
-            if (user?.role === 'guest') {
+            if (user?.role === 'OUTSIDER') {
                 try {
                     const { data: { session } } = await supabase.auth.getSession()
                     const token = session?.access_token
@@ -105,7 +105,7 @@ export default function OrdersPage() {
             )
             if (confirmed) {
                 clearCart()
-                signOut()
+                logout()
             }
             return
         }
@@ -164,7 +164,7 @@ export default function OrdersPage() {
                 </h1>
             </div>
 
-            {user?.role === 'guest' && (
+            {user?.role === 'OUTSIDER' && (
                 <div style={{
                     marginBottom: 'var(--space-6)',
                     background: activeSession ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.9)',

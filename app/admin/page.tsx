@@ -76,7 +76,7 @@ export default function AdminDashboard() {
     const [demographicData, setDemographicData] = useState<any[]>([])
     const [hourlyData, setHourlyData] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const { signOut } = useAuth()
+    const { logout } = useAuth()
     const { clearCart } = useCart()
 
     const [startDate, setStartDate] = useState(() => {
@@ -626,7 +626,7 @@ export default function AdminDashboard() {
                             <ActionButton
                                 icon={<LogOut size={16} />}
                                 label="Logout"
-                                onClick={() => { clearCart(); signOut(); }}
+                                onClick={() => { clearCart(); logout(); }}
                             />
                         </div>
                     </div>

@@ -1,25 +1,21 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { AuthChangeEvent, Session } from '@supabase/supabase-js'
-
-type UserRole = 'student' | 'staff' | 'kitchen_manager' | 'admin' | 'guest'
-
-interface AuthUser {
-    id: string
-    email: string
-    name: string
-    role: UserRole
-    phone?: string
-}
+import type { AuthUser, UserRole, LoginCredentials, GuestLoginCredentials, AuthResponse } from '@/lib/types/auth'
+import { hasPermission, canAccess } from '@/lib/types/auth'
 
 interface AuthContextType {
     user: AuthUser | null
     isLoading: boolean
-    signIn: (userData: AuthUser) => void
-    signOut: () => Promise<void>
+    isAuthenticated: boolean
+    sessionToken: string | null
+    login: (credentials: LoginCredentials) => Promise<AuthResponse>
+    guestLogin: (credentials: GuestLoginCredentials) => Promise<AuthResponse>
+    logout: () => Promise<void>
+    refreshSession: () => Promise<boolean>
+    hasRole: (...roles: UserRole[]) => boolean
+    hasPermission: (permission: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -31,31 +27,25 @@ function setAuthCookie(role: UserRole | null) {
     if (role === null) {
         // Clear cookies on logout
         document.cookie = 'auth_role=; path=/; max-age=0; SameSite=Lax'
-        document.cookie = 'guest_session_active=; path=/; max-age=0; SameSite=Lax'
-    } else if (role === 'guest') {
-        // Set guest session cookie
-        document.cookie = 'guest_session_active=true; path=/; max-age=86400; SameSite=Lax'
-        document.cookie = 'auth_role=guest; path=/; max-age=86400; SameSite=Lax'
+        document.cookie = 'session_token=; path=/; max-age=0; SameSite=Lax'
     } else {
-        // Set staff/admin auth cookie
+        // Set auth role cookie
         document.cookie = `auth_role=${role}; path=/; max-age=86400; SameSite=Lax`
-        document.cookie = 'guest_session_active=; path=/; max-age=0; SameSite=Lax'
     }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null)
     const [isLoading, setIsLoading] = useState(true)
+    const [sessionToken, setSessionToken] = useState<string | null>(null)
     const router = useRouter()
-
-    // Create Supabase client (SSR-compatible browser client)
-    const supabase = useMemo(() => createClient(), [])
 
     // Initialize user from localStorage (client-side only)
     useEffect(() => {
         const initializeAuth = async () => {
-            // First, check localStorage for cached user
-            const storedUser = localStorage.getItem('user')
+            // First, check localStorage for cached user and session
+            const storedUser = localStorage.getItem('auth_user')
+            const storedToken = localStorage.getItem('session_token')
             let cachedUser: AuthUser | null = null
 
             if (storedUser) {
@@ -63,133 +53,194 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     cachedUser = JSON.parse(storedUser)
                 } catch (e) {
                     console.error('Failed to parse stored user:', e)
-                    localStorage.removeItem('user')
+                    localStorage.removeItem('auth_user')
                 }
             }
 
-            // For non-guest users, validate Supabase session when possible
-            if (cachedUser && cachedUser.role !== 'guest') {
-                try {
-                    // getUser() validates the JWT with the Supabase server
-                    const { data: { user: authUser }, error } = await supabase.auth.getUser()
-
-                    if (authUser && !error) {
-                        // Session is valid, fetch fresh profile
-                        const { data: profile } = await supabase
-                            .from('users')
-                            .select('id, email, name, role, phone')
-                            .eq('id', authUser.id)
-                            .single()
-
-                        if (profile) {
-                            setUser(profile)
-                            localStorage.setItem('user', JSON.stringify(profile))
-                            setAuthCookie(profile.role)
-                        } else {
-                            // Profile not found, clear session
-                            await supabase.auth.signOut()
-                            localStorage.removeItem('user')
-                            setAuthCookie(null)
-                        }
-                    } else {
-                        // Fall back to cached user when server session is not accessible in the browser
-                        setUser(cachedUser)
-                        setAuthCookie(cachedUser.role)
-                    }
-                } catch (error) {
-                    console.error('Session validation error:', error)
-                    setUser(cachedUser)
-                    setAuthCookie(cachedUser.role)
-                }
-            } else if (cachedUser && cachedUser.role === 'guest') {
-                // For guests, trust localStorage but verify guest session exists
-                const guestSession = localStorage.getItem('guest_session')
-                if (guestSession) {
-                    setUser(cachedUser)
-                    setAuthCookie('guest')
-                } else {
-                    // No guest session, clear user
-                    localStorage.removeItem('user')
-                    setAuthCookie(null)
-                }
+            // If user found in storage, use it (session validated on server-side via token)
+            if (cachedUser && storedToken) {
+                setUser(cachedUser)
+                setSessionToken(storedToken)
+                setAuthCookie(cachedUser.role)
             }
 
             setIsLoading(false)
         }
 
         initializeAuth()
-
-        // Listen for Supabase auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event: AuthChangeEvent, session: Session | null) => {
-                if (event === 'SIGNED_IN' && session?.user) {
-                    // Fetch profile on sign in
-                    const { data: profile } = await supabase
-                        .from('users')
-                        .select('id, email, name, role, phone')
-                        .eq('id', session.user.id)
-                        .single()
-
-                    if (profile) {
-                        setUser(profile)
-                        localStorage.setItem('user', JSON.stringify(profile))
-                        setAuthCookie(profile.role)
-                    }
-                } else if (event === 'SIGNED_OUT') {
-                    setUser(null)
-                    localStorage.removeItem('user')
-                    setAuthCookie(null)
-                } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-                    // Session was refreshed, ensure user state is current
-                    const currentUser = localStorage.getItem('user')
-                    if (currentUser) {
-                        const parsed = JSON.parse(currentUser)
-                        if (parsed.role !== 'guest') {
-                            setAuthCookie(parsed.role)
-                        }
-                    }
-                }
-            }
-        )
-
-        return () => subscription.unsubscribe()
-    }, [supabase])
-
-    const signIn = useCallback((userData: AuthUser) => {
-        localStorage.setItem('user', JSON.stringify(userData))
-        setUser(userData)
-        setAuthCookie(userData.role)
     }, [])
 
-    const signOut = useCallback(async () => {
-        // Sign out from Supabase (for non-guest users)
+    // Login handler for PIN-based (STUDENT/KITCHEN/ADMIN)
+    const login = useCallback(
+        async (credentials: LoginCredentials): Promise<AuthResponse> => {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: credentials.phone,
+                        pin: credentials.pin,
+                        login_type: 'student'
+                    })
+                })
+
+                const data = await response.json()
+
+                if (data.success && data.user && data.session) {
+                    localStorage.setItem('auth_user', JSON.stringify(data.user))
+                    localStorage.setItem('session_token', data.session.session_token)
+                    setUser(data.user)
+                    setSessionToken(data.session.session_token)
+                    setAuthCookie(data.user.role)
+                    return data
+                }
+
+                return data
+            } catch (error) {
+                console.error('Login error:', error)
+                return { success: false, error: 'Login failed' }
+            }
+        },
+        []
+    )
+
+    // Guest login handler
+    const guestLogin = useCallback(
+        async (credentials: GuestLoginCredentials): Promise<AuthResponse> => {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: credentials.phone,
+                        name: credentials.name,
+                        table_name: credentials.table_name,
+                        num_guests: credentials.num_guests,
+                        login_type: 'guest'
+                    })
+                })
+
+                const data = await response.json()
+
+                if (data.success && data.user && data.session) {
+                    localStorage.setItem('auth_user', JSON.stringify(data.user))
+                    localStorage.setItem('session_token', data.session.session_token)
+                    localStorage.setItem('guest_session', JSON.stringify(data.session))
+                    setUser(data.user)
+                    setSessionToken(data.session.session_token)
+                    setAuthCookie('OUTSIDER')
+                    return data
+                }
+
+                return data
+            } catch (error) {
+                console.error('Guest login error:', error)
+                return { success: false, error: 'Login failed' }
+            }
+        },
+        []
+    )
+
+    const logout = useCallback(async () => {
         try {
-            await supabase.auth.signOut()
+            // Call logout endpoint with userId
+            const storedUser = localStorage.getItem('auth_user')
+            const userData = storedUser ? JSON.parse(storedUser) : null
+            if (userData?.id) {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: userData.id })
+                })
+            }
         } catch (e) {
-            // Ignore errors if not signed into Supabase
+            console.error('Logout request error:', e)
+        } finally {
+            // Clear all auth-related localStorage
+            localStorage.removeItem('auth_user')
+            localStorage.removeItem('session_token')
+            localStorage.removeItem('guest_session')
+            localStorage.removeItem('guest_phone')
+            localStorage.removeItem('guest_name')
+            localStorage.removeItem('guest_email')
+            localStorage.removeItem('guest_table')
+            localStorage.removeItem('guest_num_guests')
+            localStorage.removeItem('guest_orders')
+            localStorage.removeItem('is_guest_active')
+            localStorage.removeItem('cart')
+
+            // Clear auth cookies
+            setAuthCookie(null)
+
+            setUser(null)
+            setSessionToken(null)
+            router.push('/login')
         }
+    }, [router])
 
-        // Clear all auth-related localStorage
-        localStorage.removeItem('user')
-        localStorage.removeItem('guest_session')
-        localStorage.removeItem('guest_name')
-        localStorage.removeItem('guest_email')
-        localStorage.removeItem('guest_table')
-        localStorage.removeItem('guest_num_guests')
-        localStorage.removeItem('guest_phone')
-        localStorage.removeItem('guest_orders')
-        localStorage.removeItem('is_guest_active')
-        localStorage.removeItem('cart')
+    const refreshSession = useCallback(async (): Promise<boolean> => {
+        try {
+            const token = localStorage.getItem('session_token')
+            if (!token) {
+                return false
+            }
 
-        // Clear auth cookies
-        setAuthCookie(null)
+            const response = await fetch('/api/auth/refresh', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            })
 
-        setUser(null)
-        router.push('/login')
-    }, [router, supabase])
+            const data = await response.json()
+
+            if (data.success && data.user && data.session) {
+                localStorage.setItem('auth_user', JSON.stringify(data.user))
+                localStorage.setItem('session_token', data.session.session_token)
+                setUser(data.user)
+                setSessionToken(data.session.session_token)
+                return true
+            }
+
+            return false
+        } catch (error) {
+            console.error('Session refresh error:', error)
+            return false
+        }
+    }, [])
+
+    const hasRoleCheck = useCallback(
+        (...roles: UserRole[]): boolean => {
+            if (!user) return false
+            return canAccess(user.role, roles)
+        },
+        [user]
+    )
+
+    const hasPermissionCheck = useCallback(
+        (permission: string): boolean => {
+            if (!user) return false
+            return hasPermission(user.role, permission)
+        },
+        [user]
+    )
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                isLoading,
+                isAuthenticated: !!user,
+                sessionToken,
+                login,
+                guestLogin,
+                logout,
+                refreshSession,
+                hasRole: hasRoleCheck,
+                hasPermission: hasPermissionCheck
+            }}
+        >
             {children}
         </AuthContext.Provider>
     )

@@ -10,7 +10,7 @@ import { Loading } from '@/components/ui/Loading'
 import { useCart } from '@/lib/context/CartContext'
 
 export default function ProfilePage() {
-    const { signOut, user } = useAuth()
+    const { logout, user } = useAuth()
     const role = user?.role
     const { clearCart } = useCart()
     const [userDetails, setUserDetails] = useState<any>(null)
@@ -52,7 +52,7 @@ export default function ProfilePage() {
         }
 
         async function fetchActiveSession() {
-            if (user?.role === 'guest') {
+            if (user?.role === 'OUTSIDER') {
                 try {
                     // Use phone for session lookup (or userId as fallback)
                     const phone = userDetails?.phone || user?.phone
@@ -97,7 +97,7 @@ export default function ProfilePage() {
             )
             if (confirmed) {
                 clearCart()
-                signOut()
+                logout()
             }
             return
         }
@@ -187,17 +187,17 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{userDetails?.name || 'Ai Cavalli Member'}</h2>
-                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.875rem' }}>{role === 'student' ? 'RIDER' : role?.toUpperCase()} ACCOUNT</p>
+                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.875rem' }}>{role === 'STUDENT' ? 'RIDER' : role} ACCOUNT</p>
                             </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
                             <div style={{ padding: 'var(--space-4)', background: 'var(--background)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
-                                    {role === 'staff' || role === 'student' ? 'PHONE NUMBER' : 'EMAIL ADDRESS'}
+                                    {role === 'STUDENT' ? 'PHONE NUMBER' : 'EMAIL ADDRESS'}
                                 </p>
                                 <p style={{ fontWeight: 700, margin: 0 }}>
-                                    {role === 'staff' || role === 'student'
+                                    {role === 'STUDENT'
                                         ? (userDetails?.phone || 'Not set')
                                         : (userDetails?.email || 'Not set')}
                                 </p>
@@ -212,7 +212,7 @@ export default function ProfilePage() {
                         </div>
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-                            {role === 'guest' && (
+                            {role === 'OUTSIDER' && (
                                 <div style={{
                                     flex: '1 1 100%',
                                     background: 'rgba(16, 185, 129, 0.05)',
@@ -317,7 +317,7 @@ export default function ProfilePage() {
                                 <MessageSquare size={18} style={{ marginRight: '8px' }} />
                                 Contact Support
                             </Button>
-                            <Button onClick={() => { clearCart(); signOut(); }} variant="outline" style={{ flex: 1, minWidth: '180px' }}>
+                            <Button onClick={() => { clearCart(); logout(); }} variant="outline" style={{ flex: 1, minWidth: '180px' }}>
                                 <LogOut size={18} style={{ marginRight: '8px' }} />
                                 Sign Out
                             </Button>

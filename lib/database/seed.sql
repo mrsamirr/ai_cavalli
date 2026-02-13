@@ -1,11 +1,11 @@
 -- USERS (Password is PIN)
--- Student: 1234567890 / 1234
+-- Student: 1234567890 / 123456
 INSERT INTO public.users (phone, pin, name, role, parent_name)
 VALUES 
-('1234567890', '1234', 'Alice Student', 'student', 'Parent One'),
-('9876543210', '1234', 'Bob Staff', 'staff', null),
-('5555555555', '1234', 'K chef', 'kitchen_manager', null),
-('0000000000', '1234', 'Admin User', 'admin', null)
+('1234567890', '123456', 'Alice Student', 'student', 'Parent One'),
+('9876543210', '123456', 'Bob Staff', 'staff', null),
+('5555555555', '123456', 'K chef', 'kitchen_manager', null),
+('0000000000', '123456', 'Admin User', 'admin', null)
 ON CONFLICT (phone) DO NOTHING;
 
 -- CATEGORIES

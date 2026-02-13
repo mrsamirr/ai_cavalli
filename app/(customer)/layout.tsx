@@ -16,16 +16,13 @@ export default function CustomerLayout({
     useEffect(() => {
         if (!isLoading) {
             if (!user) {
-                // No authenticated user - redirect to login
                 router.push('/login')
-            } else if (user.role === 'guest') {
-                // Guests should use guest portal
+            } else if (user.role === 'OUTSIDER') {
                 router.push('/guest/home')
-            } else if (user.role === 'kitchen_manager' || user.role === 'admin') {
-                // Kitchen/admin users should use kitchen portal
+            } else if (user.role === 'KITCHEN' || user.role === 'ADMIN') {
                 router.push('/kitchen')
             }
-            // Only students and staff can access customer portal
+            // Only STUDENT can access customer portal
         }
     }, [user, isLoading, router])
 
@@ -40,8 +37,8 @@ export default function CustomerLayout({
         }}>Loading...</div>
     }
 
-    // Only render for student and staff roles
-    if (!user || user.role === 'guest' || user.role === 'kitchen_manager' || user.role === 'admin') {
+    // Only render for STUDENT role
+    if (!user || user.role === 'OUTSIDER' || user.role === 'KITCHEN' || user.role === 'ADMIN') {
         return null
     }
 

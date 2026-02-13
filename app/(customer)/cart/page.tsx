@@ -42,7 +42,7 @@ export default function CartPage() {
             const { data: { session: supabaseSession } } = await supabase.auth.getSession()
             const token = supabaseSession?.access_token
 
-            if (user?.role === 'guest') {
+            if (user?.role === 'OUTSIDER') {
                 // Get session from localStorage (set during guest login) or fetch from API
                 const storedSession = localStorage.getItem('guest_session')
                 if (storedSession) {

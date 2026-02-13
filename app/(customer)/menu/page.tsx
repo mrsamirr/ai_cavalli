@@ -71,7 +71,7 @@ export default function MenuPage() {
 
     const displayedCategories = useMemo(() => {
         return categories.filter(cat => {
-            if (cat.name === 'Fixed Menu' && role !== 'staff') {
+            if (cat.name === 'Fixed Menu' && role !== 'STUDENT') {
                 return false
             }
             return true
@@ -122,7 +122,7 @@ export default function MenuPage() {
 
     // Create virtual Regular Meal item for staff
     const regularMealItem: MenuItem | null = useMemo(() => {
-        if (role !== 'staff') return null
+        if (role !== 'STUDENT') return null
         return {
             id: 'REGULAR_MEAL_VIRTUAL',
             name: 'Regular Staff Meal',
@@ -216,7 +216,7 @@ export default function MenuPage() {
                 )}
 
                 {/* Staff Fixed Menu Section - Only for Staff */}
-                {role === 'staff' && filteredFixedItems.length > 0 && (activeCategory === 'all' || activeCategory === fixedMenuCategoryId) && (
+                {role === 'STUDENT' && filteredFixedItems.length > 0 && (activeCategory === 'all' || activeCategory === fixedMenuCategoryId) && (
                     <div style={{ marginBottom: 'var(--space-10)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                             <div style={{ width: '8px', height: '24px', background: '#3B82F6', borderRadius: '4px' }} />

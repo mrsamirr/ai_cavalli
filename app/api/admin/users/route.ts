@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import bcrypt from 'bcryptjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -8,56 +9,44 @@ export async function POST(request: NextRequest) {
     try {
         const { action, userData } = await request.json()
 
-        // 1. Initialize Supabase with Service Key for Admin Operations
         const supabase = createClient(supabaseUrl, supabaseKey)
 
-        // 2. AUTH GUARD: Verify the requester is actually an admin
-        // Extract token from Authorization header
+        // AUTH GUARD: Verify requester via session token cookie or Authorization header
         const authHeader = request.headers.get('Authorization')
-        if (!authHeader) {
-            return NextResponse.json({ success: false, error: 'Authorization header missing' }, { status: 401 })
+        const token = authHeader?.replace('Bearer ', '') || request.cookies.get('session_token')?.value
+
+        if (!token) {
+            return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
         }
 
-        const token = authHeader.replace('Bearer ', '')
-        const { data: { user: requester }, error: authCheckError } = await supabase.auth.getUser(token)
+        const { data: requester } = await supabase
+            .from('users')
+            .select('id, role')
+            .eq('session_token', token)
+            .maybeSingle()
 
-        if (authCheckError || !requester) {
-            console.error('Admin API: Invalid token session', authCheckError)
+        if (!requester) {
             return NextResponse.json({ success: false, error: 'Invalid session' }, { status: 401 })
         }
 
-        // 3. ROLE CHECK: Verify the requester has admin privileges in the DB
-        const { data: requesterProfile } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', requester.id)
-            .single()
-
-        if (!requesterProfile || !['admin', 'kitchen_manager'].includes(requesterProfile.role)) {
-            console.warn(`Unauthorized admin action attempted by user ${requester.id} (${requester.email})`)
-            return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required' }, { status: 403 })
+        const requesterRole = (requester.role || '').toUpperCase()
+        if (!['ADMIN', 'KITCHEN_MANAGER', 'KITCHEN'].includes(requesterRole)) {
+            return NextResponse.json({ success: false, error: 'Admin privileges required' }, { status: 403 })
         }
 
         if (action === 'create') {
             const { name, phone, email, pin, role, parent_name } = userData
 
-            // 1. Create Auth User
-            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-                email,
-                password: pin,
-                email_confirm: true,
-                user_metadata: { full_name: name }
-            })
+            // Hash PIN
+            const pinHash = await bcrypt.hash(pin, 10)
+            const userEmail = email || (phone ? `${phone}@aicavalli.local` : `user_${Date.now()}@aicavalli.local`)
 
-            if (authError) throw authError
-
-            // 2. Insert into public.users
             const { error: dbError } = await supabase.from('users').insert({
-                id: authData.user.id,
                 name,
                 phone,
-                email,
+                email: userEmail,
                 pin,
+                pin_hash: pinHash,
                 role,
                 parent_name: role === 'student' ? parent_name : null
             })
@@ -69,22 +58,17 @@ export async function POST(request: NextRequest) {
         } else if (action === 'update') {
             const { id, name, phone, email, pin, role, parent_name } = userData
 
-            // 1. Update Auth User (Email and Password/PIN)
-            const updatePayload: any = { email }
-            if (pin) updatePayload.password = pin
-
-            const { error: authError } = await supabase.auth.admin.updateUserById(id, updatePayload)
-            if (authError) throw authError
-
-            // 2. Update public.users
             const dbPayload: any = {
                 name,
                 phone,
-                email,
                 role,
                 parent_name: role === 'student' ? parent_name : null
             }
-            if (pin) dbPayload.pin = pin
+            if (email) dbPayload.email = email
+            if (pin) {
+                dbPayload.pin = pin
+                dbPayload.pin_hash = await bcrypt.hash(pin, 10)
+            }
 
             const { error: dbError } = await supabase
                 .from('users')
@@ -98,11 +82,6 @@ export async function POST(request: NextRequest) {
         } else if (action === 'delete') {
             const { id } = userData
 
-            // 1. Delete Auth User
-            const { error: authError } = await supabase.auth.admin.deleteUser(id)
-            if (authError) throw authError
-
-            // 2. Delete public.users
             const { error: dbError } = await supabase.from('users').delete().eq('id', id)
             if (dbError) throw dbError
 

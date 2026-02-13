@@ -76,7 +76,7 @@ export default function KitchenPage() {
     const [billData, setBillData] = useState<any>(null)
     const [billRequests, setBillRequests] = useState<any[]>([])
 
-    const { user, signOut, isLoading: authLoading } = useAuth()
+    const { user, logout, isLoading: authLoading } = useAuth()
     const router = useRouter()
 
     const fetchOrders = async () => {
@@ -133,7 +133,7 @@ export default function KitchenPage() {
 
     // Auth Guard - Allow staff, kitchen_manager, and admin
     useEffect(() => {
-        if (!authLoading && (!user || (user.role !== 'kitchen_manager' && user.role !== 'admin' && user.role !== 'staff'))) {
+        if (!authLoading && (!user || (user.role !== 'KITCHEN' && user.role !== 'ADMIN'))) {
             router.push('/home')
         }
     }, [user, authLoading, router])
@@ -294,9 +294,9 @@ export default function KitchenPage() {
     const filteredOrders = useMemo(() => {
         if (filter === 'all') return orders
         return orders.filter(order => {
-            if (filter === 'guest') return order.guest_info !== null || order.user?.role === 'guest'
-            if (filter === 'rider') return order.user_id !== null && order.user?.role === 'student'
-            if (filter === 'staff') return order.user_id !== null && order.user?.role === 'staff'
+            if (filter === 'guest') return order.guest_info !== null || order.user?.role === 'OUTSIDER'
+            if (filter === 'rider') return order.user_id !== null && order.user?.role === 'STUDENT'
+            if (filter === 'staff') return order.user_id !== null && order.user?.role === 'STUDENT'
             return true
         })
     }, [orders, filter])
@@ -395,9 +395,9 @@ export default function KitchenPage() {
     }
 
     const getOrderTypeBadge = (order: Order) => {
-        if (order.guest_info || order.user?.role === 'guest') return { label: 'GUEST', color: '#9333ea', icon: User }
-        if (order.user?.role === 'student') return { label: 'RIDER', color: '#2563eb', icon: LayoutDashboard }
-        if (order.user?.role === 'staff') {
+        if (order.guest_info || order.user?.role === 'OUTSIDER') return { label: 'GUEST', color: '#9333ea', icon: User }
+        if (order.user?.role === 'STUDENT') return { label: 'RIDER', color: '#2563eb', icon: LayoutDashboard }
+        if (order.user?.role === 'KITCHEN') {
             if (order.notes === 'REGULAR_STAFF_MEAL') return { label: 'REGULAR MEAL', color: '#3B82F6', icon: Shield }
             return { label: 'STAFF', color: '#059669', icon: Shield }
         }
@@ -405,7 +405,7 @@ export default function KitchenPage() {
     }
 
     if (authLoading || loading) return <Loading fullScreen message="Syncing with Kitchen..." />
-    if (!user || (user.role !== 'kitchen_manager' && user.role !== 'admin' && user.role !== 'staff')) return null
+    if (!user || (user.role !== 'KITCHEN' && user.role !== 'ADMIN')) return null
 
     return (
         <div className="fade-in" style={{ padding: 'var(--space-4)', background: 'var(--background)', minHeight: '100vh' }}>
@@ -477,7 +477,7 @@ export default function KitchenPage() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => signOut()}
+                        onClick={() => logout()}
                         style={{
                             color: '#64748b',
                             fontWeight: '700',

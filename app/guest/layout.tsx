@@ -16,16 +16,11 @@ export default function GuestLayout({
     useEffect(() => {
         if (!isLoading) {
             if (!user) {
-                // No authenticated user - redirect to login
                 router.push('/login')
-            } else if (user.role !== 'guest') {
-                // Non-guest users should use appropriate portal
-                if (user.role === 'admin') {
-                    router.push('/admin')
-                } else if (user.role === 'kitchen_manager' || user.role === 'staff') {
+            } else if (user.role !== 'OUTSIDER') {
+                if (user.role === 'ADMIN' || user.role === 'KITCHEN') {
                     router.push('/kitchen')
                 } else {
-                    // student role
                     router.push('/home')
                 }
             }
@@ -43,8 +38,8 @@ export default function GuestLayout({
         }}>Loading...</div>
     }
 
-    // Only render for guest users
-    if (!user || user.role !== 'guest') {
+    // Only render for OUTSIDER (guest) users
+    if (!user || user.role !== 'OUTSIDER') {
         return null
     }
 
