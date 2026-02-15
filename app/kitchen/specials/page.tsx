@@ -1,284 +1,724 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/database/supabase'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Trash2, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
-import { ImageSelector } from '@/components/ui/ImageSelector'
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/database/supabase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Trash2, ArrowLeft, Plus } from "lucide-react";
+import Link from "next/link";
+import { ImageSelector } from "@/components/ui/ImageSelector";
+import { MenuItemSelector } from "@/components/kitchen/MenuItemSelector";
 
 interface MenuItem {
-    id: string;
-    name: string;
-    description: string | null;
-    price: number;
-    category_id: string;
-    image_url: string | null;
-    available: boolean;
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category_id: string;
+  image_url: string | null;
+  available: boolean;
 }
 
 interface Category {
-    id: string;
-    name: string;
-    sort_order: number;
+  id: string;
+  name: string;
+  sort_order: number;
 }
 
 interface SpecialItem {
-    id: string;
-    menu_item_id: string;
-    period: string;
-    date: string;
-    menu_item: MenuItem;
+  id: string;
+  menu_item_id: string;
+  period: string;
+  date: string;
+  menu_item: MenuItem;
 }
 
 export default function KitchenSpecialsPage() {
-    const [items, setItems] = useState<MenuItem[]>([])
-    const [categories, setCategories] = useState<Category[]>([])
-    const [specials, setSpecials] = useState<SpecialItem[]>([])
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [specials, setSpecials] = useState<SpecialItem[]>([]);
 
-    // Selection state
-    const [selectedItem, setSelectedItem] = useState('')
-    const [period, setPeriod] = useState<string>('breakfast')
+  // Selection state
+  const [selectedItem, setSelectedItem] = useState("");
+  const [period, setPeriod] = useState<string>("breakfast");
 
-    // Quick create state
-    const [isCreatingNew, setIsCreatingNew] = useState(false)
-    const [newName, setNewName] = useState('')
-    const [newPrice, setNewPrice] = useState('')
-    const [newDescription, setNewDescription] = useState('')
-    const [newImageUrl, setNewImageUrl] = useState('')
-    const [newCategoryId, setNewCategoryId] = useState('')
+  // Quick create state
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPrice, setNewPrice] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newImageUrl, setNewImageUrl] = useState("");
+  const [newCategoryId, setNewCategoryId] = useState("");
 
-    const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(true);
+  const [showMenuSelector, setShowMenuSelector] = useState(false);
 
-    useEffect(() => {
-        fetchData()
-    }, [])
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    async function fetchData() {
-        const today = new Date().toISOString().split('T')[0]
+  async function fetchData() {
+    const today = new Date().toISOString().split("T")[0];
 
-        // Fetch all menu items + categories
-        const [menuRes, catRes, specialRes] = await Promise.all([
-            supabase.from('menu_items').select('*').eq('available', true),
-            supabase.from('categories').select('*').order('sort_order'),
-            supabase.from('daily_specials').select('*, menu_item:menu_items(*)').eq('date', today)
-        ])
+    // Fetch all menu items + categories
+    const [menuRes, catRes, specialRes] = await Promise.all([
+      supabase.from("menu_items").select("*").eq("available", true),
+      supabase.from("categories").select("*").order("sort_order"),
+      supabase
+        .from("daily_specials")
+        .select("*, menu_item:menu_items(*)")
+        .eq("date", today),
+    ]);
 
-        if (menuRes.data) setItems(menuRes.data)
-        if (catRes.data) {
-            setCategories(catRes.data)
-            const specialsCat = catRes.data.find((c: Category) => c.name === "Today's Specials")
-            if (specialsCat) {
-                setNewCategoryId(specialsCat.id)
-            } else if (catRes.data.length > 0) {
-                setNewCategoryId(catRes.data[0].id)
-            }
-        }
-        if (specialRes.data) setSpecials(specialRes.data)
-        setLoading(false)
+    if (menuRes.data) setItems(menuRes.data);
+    if (catRes.data) {
+      setCategories(catRes.data);
+      const specialsCat = catRes.data.find(
+        (c: Category) => c.name === "Today's Specials",
+      );
+      if (specialsCat) {
+        setNewCategoryId(specialsCat.id);
+      } else if (catRes.data.length > 0) {
+        setNewCategoryId(catRes.data[0].id);
+      }
+    }
+    if (specialRes.data) setSpecials(specialRes.data);
+    setLoading(false);
+  }
+
+  async function handleQuickCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newName || !newPrice) return;
+    setLoading(true);
+
+    // 1. Create Menu Item
+    const { data: item, error: itemError } = await supabase
+      .from("menu_items")
+      .insert({
+        name: newName,
+        description: newDescription,
+        price: parseFloat(newPrice),
+        image_url: newImageUrl,
+        category_id: newCategoryId,
+        available: true,
+      })
+      .select()
+      .single();
+
+    if (itemError) {
+      alert("Error creating menu item: " + itemError.message);
+      setLoading(false);
+      return;
     }
 
-    async function handleQuickCreate(e: React.FormEvent) {
-        e.preventDefault()
-        if (!newName || !newPrice) return
-        setLoading(true)
+    // 2. Add as Special
+    const { error: specialError } = await supabase
+      .from("daily_specials")
+      .insert({
+        menu_item_id: item.id,
+        period: period,
+        date: new Date().toISOString().split("T")[0],
+      });
 
-        // 1. Create Menu Item
-        const { data: item, error: itemError } = await supabase
-            .from('menu_items')
-            .insert({
-                name: newName,
-                description: newDescription,
-                price: parseFloat(newPrice),
-                image_url: newImageUrl,
-                category_id: newCategoryId,
-                available: true
-            })
-            .select()
-            .single()
+    if (!specialError) {
+      setIsCreatingNew(false);
+      setNewName("");
+      setNewPrice("");
+      setNewDescription("");
+      setNewImageUrl("");
+      fetchData();
+    } else {
+      alert(
+        "Item created but failed to add as special: " + specialError.message,
+      );
+    }
+    setLoading(false);
+  }
 
-        if (itemError) {
-            alert('Error creating menu item: ' + itemError.message)
-            setLoading(false)
-            return
-        }
+  async function addSpecial(itemId?: string) {
+    const menuItemId = itemId || selectedItem;
+    if (!menuItemId) return;
 
-        // 2. Add as Special
-        const { error: specialError } = await supabase.from('daily_specials').insert({
-            menu_item_id: item.id,
-            period: period,
-            date: new Date().toISOString().split('T')[0]
-        })
-
-        if (!specialError) {
-            setIsCreatingNew(false)
-            setNewName('')
-            setNewPrice('')
-            setNewDescription('')
-            setNewImageUrl('')
-            fetchData()
-        } else {
-            alert('Item created but failed to add as special: ' + specialError.message)
-        }
-        setLoading(false)
+    // Check if this item is already a special for this period today
+    const existing = specials.find(
+      s => s.menu_item_id === menuItemId && s.period === period
+    );
+    
+    if (existing) {
+      const itemName = items.find(i => i.id === menuItemId)?.name || 'This item';
+      alert(`${itemName} is already added as a ${period} special today!`);
+      return;
     }
 
-    async function addSpecial() {
-        if (!selectedItem) return
+    setLoading(true);
+    const { error } = await supabase.from("daily_specials").insert({
+      menu_item_id: menuItemId,
+      period: period,
+      date: new Date().toISOString().split("T")[0],
+    });
 
-        const { error } = await supabase.from('daily_specials').insert({
-            menu_item_id: selectedItem,
-            period: period
-        })
-
-        if (error) {
-            alert('Failed to add special (maybe duplicate?)')
-        } else {
-            fetchData()
-        }
+    if (error) {
+      console.error('Error adding special:', error);
+      alert("Failed to add special: " + error.message);
+    } else {
+      setSelectedItem("");
+      await fetchData();
     }
+    setLoading(false);
+  }
 
-    async function removeSpecial(id: string) {
-        await supabase.from('daily_specials').delete().eq('id', id)
-        fetchData()
-    }
+  async function removeSpecial(id: string) {
+    setLoading(true);
+    await supabase.from("daily_specials").delete().eq("id", id);
+    await fetchData();
+    setLoading(false);
+  }
 
-    return (
-        <div style={{ background: '#fcfcfc', minHeight: '100vh', padding: '2rem' }}>
-            <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                    <Link href="/kitchen" style={{ color: '#666', display: 'flex', alignItems: 'center' }}>
-                        <ArrowLeft size={24} />
-                    </Link>
-                    <h2 style={{ margin: 0, color: 'var(--primary)', fontFamily: 'var(--font-serif)' }}>Manage Daily Specials</h2>
-                </div>
-
-                <div style={{ marginBottom: '2rem', borderBottom: '1px solid #eee', paddingBottom: '1rem', display: 'flex', gap: '2rem' }}>
-                    <button
-                        onClick={() => setIsCreatingNew(false)}
-                        style={{
-                            background: 'none', border: 'none', padding: '0.5rem 0',
-                            borderBottom: !isCreatingNew ? '3px solid var(--primary)' : '3px solid transparent',
-                            fontWeight: !isCreatingNew ? 'bold' : 'normal', cursor: 'pointer', color: !isCreatingNew ? 'var(--primary)' : '#888'
-                        }}
-                    >
-                        Pick Existing Item
-                    </button>
-                    <button
-                        onClick={() => setIsCreatingNew(true)}
-                        style={{
-                            background: 'none', border: 'none', padding: '0.5rem 0',
-                            borderBottom: isCreatingNew ? '3px solid var(--primary)' : '3px solid transparent',
-                            fontWeight: isCreatingNew ? 'bold' : 'normal', cursor: 'pointer', color: isCreatingNew ? 'var(--primary)' : '#888'
-                        }}
-                    >
-                        Create New Item
-                    </button>
-                </div>
-
-                {!isCreatingNew ? (
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '3rem', alignItems: 'flex-end' }}>
-                        <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.85rem', color: '#666' }}>Menu Item</label>
-                            <select
-                                value={selectedItem}
-                                onChange={(e) => setSelectedItem(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-                            >
-                                <option value="">Select an item...</option>
-                                {items.map(item => (
-                                    <option key={item.id} value={item.id}>{item.name} (₹{item.price})</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div style={{ width: '150px' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.85rem', color: '#666' }}>Period</label>
-                            <select
-                                value={period}
-                                onChange={(e) => setPeriod(e.target.value)}
-                                style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-                            >
-                                <option value="breakfast">Breakfast</option>
-                                <option value="lunch">Lunch</option>
-                            </select>
-                        </div>
-
-                        <Button onClick={addSpecial} disabled={!selectedItem}>Add Special</Button>
-                    </div>
-                ) : (
-                    <form onSubmit={handleQuickCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
-                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 2, minWidth: '240px' }}>
-                                <Input label="Dish Name" placeholder="e.g. Eggs Benedict" value={newName} onChange={e => setNewName(e.target.value)} required />
-                            </div>
-                            <div style={{ flex: 1, minWidth: '120px' }}>
-                                <Input label="Price (₹)" type="number" step="0.01" value={newPrice} onChange={e => setNewPrice(e.target.value)} required />
-                            </div>
-                        </div>
-
-                        <Input label="Description" placeholder="Optional details about the dish..." value={newDescription} onChange={e => setNewDescription(e.target.value)} />
-
-                        <ImageSelector
-                            label="Dish Image"
-                            value={newImageUrl}
-                            onChange={(val) => setNewImageUrl(val)}
-                        />
-
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-                            <div style={{ width: '150px' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.85rem', color: '#666' }}>Period</label>
-                                <select
-                                    value={period}
-                                    onChange={(e) => setPeriod(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}
-                                >
-                                    <option value="breakfast">Breakfast</option>
-                                    <option value="lunch">Lunch</option>
-                                </select>
-                            </div>
-                            <Button type="submit" isLoading={loading} style={{ flex: 1 }}>Create & Add Special</Button>
-                        </div>
-                    </form>
-                )}
-
-                <h3 style={{ marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>Current Specials</h3>
-
-                {loading ? <p>Loading...</p> : specials.length === 0 ? <p>No specials set for today.</p> : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {specials.map(special => (
-                            <div key={special.id} style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '1rem',
-                                background: '#f9f9f9',
-                                borderRadius: 'var(--radius)'
-                            }}>
-                                <div>
-                                    <span style={{
-                                        textTransform: 'uppercase',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 'bold',
-                                        background: special.period === 'breakfast' ? '#e0f2fe' : '#fef3c7',
-                                        color: special.period === 'breakfast' ? '#0369a1' : '#d97706',
-                                        padding: '0.2rem 0.5rem',
-                                        borderRadius: '4px',
-                                        marginRight: '0.75rem'
-                                    }}>
-                                        {special.period}
-                                    </span>
-                                    <span style={{ fontWeight: 500 }}>{special.menu_item?.name}</span>
-                                </div>
-                                <Button size="sm" variant="ghost" onClick={() => removeSpecial(special.id)} style={{ color: 'red' }}>
-                                    <Trash2 size={18} />
-                                </Button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+  return (
+    <div style={{ background: "#fcfcfc", minHeight: "100vh", padding: "2rem" }}>
+      <div
+        style={{
+          maxWidth: "800px",
+          margin: "0 auto",
+          background: "white",
+          padding: "2rem",
+          borderRadius: "12px",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            marginBottom: "2rem",
+          }}
+        >
+          <Link
+            href="/kitchen"
+            style={{ color: "#666", display: "flex", alignItems: "center" }}
+          >
+            <ArrowLeft size={24} />
+          </Link>
+          <h2
+            style={{
+              margin: 0,
+              color: "var(--primary)",
+              fontFamily: "var(--font-serif)",
+            }}
+          >
+            Manage Daily Specials
+          </h2>
         </div>
-    )
+
+        <div
+          style={{
+            marginBottom: "2rem",
+            borderBottom: "1px solid #eee",
+            paddingBottom: "1rem",
+            display: "flex",
+            gap: "2rem",
+          }}
+        >
+          <button
+            onClick={() => setIsCreatingNew(false)}
+            style={{
+              background: "none",
+              border: "none",
+              padding: "0.5rem 0",
+              borderBottom: !isCreatingNew
+                ? "3px solid var(--primary)"
+                : "3px solid transparent",
+              fontWeight: !isCreatingNew ? "bold" : "normal",
+              cursor: "pointer",
+              color: !isCreatingNew ? "var(--primary)" : "#888",
+            }}
+          >
+            Pick Existing Item
+          </button>
+          <button
+            onClick={() => setIsCreatingNew(true)}
+            style={{
+              background: "none",
+              border: "none",
+              padding: "0.5rem 0",
+              borderBottom: isCreatingNew
+                ? "3px solid var(--primary)"
+                : "3px solid transparent",
+              fontWeight: isCreatingNew ? "bold" : "normal",
+              cursor: "pointer",
+              color: isCreatingNew ? "var(--primary)" : "#888",
+            }}
+          >
+            Create New Item
+          </button>
+        </div>
+
+        {!isCreatingNew ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5rem",
+              marginBottom: "3rem",
+            }}
+          >
+            {/* Period Selector - Make it prominent */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "0.75rem",
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  color: "#333",
+                }}
+              >
+                Select Period
+              </label>
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  onClick={() => setPeriod("breakfast")}
+                  style={{
+                    flex: 1,
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    border: period === "breakfast" ? "2px solid #0369a1" : "2px solid #e0e0e0",
+                    background: period === "breakfast" ? "#e0f2fe" : "white",
+                    color: period === "breakfast" ? "#0369a1" : "#666",
+                    fontWeight: period === "breakfast" ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  🌅 Breakfast
+                </button>
+                <button
+                  onClick={() => setPeriod("lunch")}
+                  style={{
+                    flex: 1,
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    border: period === "lunch" ? "2px solid #d97706" : "2px solid #e0e0e0",
+                    background: period === "lunch" ? "#fef3c7" : "white",
+                    color: period === "lunch" ? "#d97706" : "#666",
+                    fontWeight: period === "lunch" ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  🍽️ Lunch
+                </button>
+              </div>
+            </div>
+
+            {/* Menu Item Selector */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "0.75rem",
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  color: "#333",
+                }}
+              >
+                Choose Menu Item
+              </label>
+              <button
+                onClick={() => setShowMenuSelector(true)}
+                style={{
+                  width: "100%",
+                  padding: "1.25rem",
+                  borderRadius: "12px",
+                  border: selectedItem ? "2px solid var(--primary)" : "2px dashed #ccc",
+                  background: selectedItem ? "#fff5f5" : "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  color: selectedItem ? "var(--primary)" : "#666",
+                  transition: "all 0.2s ease",
+                  fontSize: "1rem",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = selectedItem ? "#fff0f0" : "#f9f9f9";
+                  e.currentTarget.style.borderColor = "var(--primary)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = selectedItem ? "#fff5f5" : "white";
+                  e.currentTarget.style.borderColor = selectedItem ? "var(--primary)" : "#ccc";
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <Plus size={20} />
+                  <span>
+                    {selectedItem 
+                      ? items.find(i => i.id === selectedItem)?.name || "Select Item" 
+                      : "Click to Browse Menu Items"}
+                  </span>
+                </div>
+                {selectedItem && (
+                  <span style={{
+                    fontSize: "0.75rem",
+                    background: "var(--primary)",
+                    color: "white",
+                    padding: "4px 8px",
+                    borderRadius: "6px",
+                  }}>
+                    Selected
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Add Button */}
+            <Button 
+              onClick={() => addSpecial()} 
+              disabled={!selectedItem || loading}
+              isLoading={loading}
+              size="lg"
+              style={{
+                width: "100%",
+                height: "56px",
+                fontSize: "1rem",
+                fontWeight: 700,
+              }}
+            >
+              {selectedItem ? `Add to ${period === "breakfast" ? "Breakfast" : "Lunch"} Specials` : "Select an Item First"}
+            </Button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleQuickCreate}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5rem",
+              marginBottom: "3rem",
+            }}
+          >
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              <div style={{ flex: 2, minWidth: "240px" }}>
+                <Input
+                  label="Dish Name"
+                  placeholder="e.g. Eggs Benedict"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                />
+              </div>
+              <div style={{ flex: 1, minWidth: "120px" }}>
+                <Input
+                  label="Price (₹)"
+                  type="number"
+                  step="0.01"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <Input
+              label="Description"
+              placeholder="Optional details about the dish..."
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+            />
+
+            <ImageSelector
+              label="Dish Image"
+              value={newImageUrl}
+              onChange={(val) => setNewImageUrl(val)}
+            />
+
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "0.75rem",
+                  fontWeight: 600,
+                  fontSize: "0.9rem",
+                  color: "#333",
+                }}
+              >
+                Select Period
+              </label>
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setPeriod("breakfast")}
+                  style={{
+                    flex: 1,
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    border: period === "breakfast" ? "2px solid #0369a1" : "2px solid #e0e0e0",
+                    background: period === "breakfast" ? "#e0f2fe" : "white",
+                    color: period === "breakfast" ? "#0369a1" : "#666",
+                    fontWeight: period === "breakfast" ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  🌅 Breakfast
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPeriod("lunch")}
+                  style={{
+                    flex: 1,
+                    padding: "1rem",
+                    borderRadius: "12px",
+                    border: period === "lunch" ? "2px solid #d97706" : "2px solid #e0e0e0",
+                    background: period === "lunch" ? "#fef3c7" : "white",
+                    color: period === "lunch" ? "#d97706" : "#666",
+                    fontWeight: period === "lunch" ? 700 : 500,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontSize: "0.95rem",
+                  }}
+                >
+                  🍽️ Lunch
+                </button>
+              </div>
+            </div>
+
+            <Button type="submit" isLoading={loading} size="lg" style={{ 
+              width: "100%",
+              height: "56px",
+              fontSize: "1rem",
+              fontWeight: 700,
+            }}>
+              Create & Add to {period === "breakfast" ? "Breakfast" : "Lunch"} Specials
+            </Button>
+          </form>
+        )}
+
+        <h3
+          style={{
+            marginTop: "2rem",
+            marginBottom: "1.5rem",
+            fontSize: "1.25rem",
+            fontWeight: 700,
+            color: "#333",
+          }}
+        >
+          Today's Specials
+        </h3>
+
+        {loading ? (
+          <div style={{ 
+            textAlign: "center", 
+            padding: "3rem", 
+            color: "#999",
+            fontSize: "0.95rem" 
+          }}>
+            Loading specials...
+          </div>
+        ) : specials.length === 0 ? (
+          <div style={{ 
+            textAlign: "center", 
+            padding: "3rem", 
+            background: "#f9f9f9", 
+            borderRadius: "12px",
+            border: "2px dashed #ddd" 
+          }}>
+            <p style={{ margin: 0, color: "#666", fontSize: "0.95rem" }}>
+              No specials set for today. Add your first special above!
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            {/* Breakfast Specials */}
+            {specials.some(s => s.period === "breakfast") && (
+              <div>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "0.75rem",
+                  padding: "0.5rem 0",
+                }}>
+                  <span style={{ fontSize: "1.5rem" }}>🌅</span>
+                  <h4 style={{
+                    margin: 0,
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    color: "#0369a1",
+                  }}>
+                    Breakfast Specials
+                  </h4>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {specials
+                    .filter(s => s.period === "breakfast")
+                    .map((special) => (
+                      <div
+                        key={special.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "1rem 1.25rem",
+                          background: "white",
+                          borderRadius: "10px",
+                          border: "2px solid #e0f2fe",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(3, 105, 161, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {special.menu_item?.image_url && (
+                            <img
+                              src={special.menu_item.image_url}
+                              alt={special.menu_item.name}
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "8px",
+                                objectFit: "cover",
+                              }}
+                            />
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#333", fontSize: "1rem" }}>
+                              {special.menu_item?.name}
+                            </div>
+                            {special.menu_item?.description && (
+                              <div style={{ fontSize: "0.8rem", color: "#666", marginTop: "2px" }}>
+                                {special.menu_item.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeSpecial(special.id)}
+                          disabled={loading}
+                          style={{ 
+                            color: "#dc2626",
+                            padding: "8px",
+                          }}
+                        >
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lunch Specials */}
+            {specials.some(s => s.period === "lunch") && (
+              <div>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "0.75rem",
+                  padding: "0.5rem 0",
+                }}>
+                  <span style={{ fontSize: "1.5rem" }}>🍽️</span>
+                  <h4 style={{
+                    margin: 0,
+                    fontSize: "1rem",
+                    fontWeight: 700,
+                    color: "#d97706",
+                  }}>
+                    Lunch Specials
+                  </h4>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {specials
+                    .filter(s => s.period === "lunch")
+                    .map((special) => (
+                      <div
+                        key={special.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "1rem 1.25rem",
+                          background: "white",
+                          borderRadius: "10px",
+                          border: "2px solid #fef3c7",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.boxShadow = "0 4px 12px rgba(217, 119, 6, 0.15)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.boxShadow = "none";
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          {special.menu_item?.image_url && (
+                            <img
+                              src={special.menu_item.image_url}
+                              alt={special.menu_item.name}
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "8px",
+                                objectFit: "cover",
+                              }}
+                            />
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#333", fontSize: "1rem" }}>
+                              {special.menu_item?.name}
+                            </div>
+                            {special.menu_item?.description && (
+                              <div style={{ fontSize: "0.8rem", color: "#666", marginTop: "2px" }}>
+                                {special.menu_item.description}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeSpecial(special.id)}
+                          disabled={loading}
+                          style={{ 
+                            color: "#dc2626",
+                            padding: "8px",
+                          }}
+                        >
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {showMenuSelector && (
+        <MenuItemSelector
+          items={items}
+          categories={categories}
+          onSelect={(item) => {
+            setSelectedItem(item.id);
+            setShowMenuSelector(false);
+          }}
+          onClose={() => setShowMenuSelector(false)}
+        />
+      )}
+    </div>
+  );
 }
