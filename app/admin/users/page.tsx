@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { supabase } from '@/lib/database/supabase'
+import { createClient } from '@supabase/supabase-js'
+import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/database/supabase'
 import { sanitizePhone } from '@/lib/utils/phone'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

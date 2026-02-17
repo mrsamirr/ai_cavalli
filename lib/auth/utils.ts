@@ -7,11 +7,12 @@ import { createClient } from '@supabase/supabase-js'
 import bcrypt from 'bcryptjs'
 import type { AuthUser } from '@/lib/types/auth'
 
+const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 /** Admin client (bypasses RLS) */
 export function getAdminClient() {
-    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey)
+    return createClient(supabase, serviceRoleKey)
 }
 
 /** Generate a random session token */

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createClient as createSSRClient } from '@/lib/supabase/server'
 import { sanitizePhone } from '@/lib/utils/phone'
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: NextRequest) {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
         const cleanPhone = sanitizePhone(phone)
 
         // Admin client for DB lookups (bypasses RLS)
-        const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey)
+        const admin = createClient(supabaseUrl, serviceRoleKey)
 
         // SSR client for auth (automatically sets session cookies on the response)
         const supabase = await createSSRClient()
