@@ -1,0 +1,333 @@
+    .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.closeBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    color: #666;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.closeBtn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.billContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Thermal bill receipt styling */
+.receipt {
+    background: white;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    color: #1a1a1a;
+    padding: 20px 16px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+}
+
+.receiptHeader {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.receiptHeader h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+}
+
+.receiptHeader p {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.divider {
+    border: none;
+    border-top: 1px dashed #999;
+    margin: 10px 0;
+}
+
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+}
+
+.infoRow span:first-child {
+    color: #666;
+}
+
+.infoRow span:last-child {
+    font-weight: 600;
+}
+
+.itemsTable {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.itemsHeader {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 6px;
+    color: #444;
+}
+
+.itemsHeader span:first-child {
+    flex: 1;
+}
+
+.itemsHeader span:nth-child(2) {
+    width: 40px;
+    text-align: center;
+}
+
+.itemsHeader span:last-child {
+    width: 70px;
+    text-align: right;
+}
+
+.itemRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+}
+
+.itemRow span:first-child {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 8px;
+}
+
+.itemRow span:nth-child(2) {
+    width: 40px;
+    text-align: center;
+    color: #666;
+}
+
+.itemRow span:last-child {
+    width: 70px;
+    text-align: right;
+    font-weight: 600;
+}
+
+.totalSection {
+    margin-top: 4px;
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+.totalRow.discount {
+    color: #10B981;
+}
+
+.grandTotal {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.1rem;
+    font-weight: 900;
+    padding: 8px 0;
+}
+
+.grandTotal span:last-child {
+    color: #C0272D;
+}
+
+.receiptFooter {
+    text-align: center;
+    margin-top: 12px;
+}
+
+.receiptFooter p {
+    margin: 2px 0;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.receiptFooter .thankYou {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+}
+
+/* Action buttons */
+.actions {
+    padding: 16px 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fafafa;
+}
+
+.printBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #C0272D;
+    color: white;
+}
+
+.printBtn:hover {
+    background: #a02025;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(192, 39, 45, 0.3);
+}
+
+.secondaryActions {
+    display: flex;
+    gap: 10px;
+}
+
+.savePdfBtn,
+.thermalPrintBtn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+    color: #333;
+}
+
+.savePdfBtn:hover {
+    border-color: #C0272D;
+    color: #C0272D;
+    background: rgba(192, 39, 45, 0.04);
+}
+
+.thermalPrintBtn:hover {
+    border-color: #10B981;
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.04);
+}
+
+/* Print-specific styles: hide everything except the receipt when printing */
+@media print {
+    .overlay {
+        position: static;
+        background: none;
+        backdrop-filter: none;
+        padding: 0;
+    }
+
+    .modal {
+        box-shadow: none;
+        border-radius: 0;
+        max-height: none;
+        max-width: none;
+    }
+
+    .header,
+    .actions {
+        display: none !important;
+    }
+
+    .billContent {
+        padding: 0;
+        overflow: visible;
+    }
+
+    .receipt {
+        border: none;
+        padding: 0;
+        font-size: 12px;
+    }
+}

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { validateSessionToken } from "@/lib/auth/utils";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -42,15 +43,23 @@ export async function POST(request: NextRequest) {
       authHeader !== "Bearer null" &&
       authHeader !== "Bearer undefined"
     ) {
-      // Validate via Supabase auth token
       const token = authHeader.replace("Bearer ", "");
-      const {
-        data: { user: requester },
-        error: authError,
-      } = await supabase.auth.getUser(token);
 
-      if (!authError && requester && requester.id === userId) {
+      // First try: Validate as custom session token (PIN-based auth)
+      if (userId && await validateSessionToken(userId, token)) {
         isAuthorized = true;
+      }
+
+      // Second try: Validate as Supabase auth token
+      if (!isAuthorized) {
+        const {
+          data: { user: requester },
+          error: authError,
+        } = await supabase.auth.getUser(token);
+
+        if (!authError && requester && requester.id === userId) {
+          isAuthorized = true;
+        }
       }
     }
 

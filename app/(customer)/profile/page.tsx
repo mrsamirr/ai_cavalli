@@ -108,7 +108,13 @@ export default function ProfilePage() {
             return
         }
 
-        // CASE 3: Active session exists with orders
+        // CASE 3: No active session but has orders
+        if (!activeSession) {
+            alert("No active session found. Your session may have already ended.")
+            return
+        }
+
+        // CASE 4: Active session exists with orders
         const confirmed = confirm(
             "Request your bill?\n\n" +
             "A waiter will bring the bill to your table. You can still add more orders if you change your mind."
@@ -317,7 +323,18 @@ export default function ProfilePage() {
                                 <MessageSquare size={18} style={{ marginRight: '8px' }} />
                                 Contact Support
                             </Button>
-                            <Button onClick={() => { clearCart(); logout(); }} variant="outline" style={{ flex: 1, minWidth: '180px' }}>
+                            <Button
+                                onClick={() => { clearCart(); logout(); }}
+                                variant="outline"
+                                style={{
+                                    flex: 1,
+                                    minWidth: '180px',
+                                    color: '#dc2626',
+                                    borderColor: '#fecaca',
+                                    background: '#fef2f2',
+                                    fontWeight: 700,
+                                }}
+                            >
                                 <LogOut size={18} style={{ marginRight: '8px' }} />
                                 Sign Out
                             </Button>

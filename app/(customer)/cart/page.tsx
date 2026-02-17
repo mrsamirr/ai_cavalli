@@ -40,8 +40,8 @@ export default function CartPage() {
             let sessionId = null
 
             // Get session token for secure API calls
-            const { data: { session: supabaseSession } } = await supabase.auth.getSession()
-            const token = supabaseSession?.access_token
+            // Use custom session token from localStorage (PIN-based auth system)
+            const token = localStorage.getItem('session_token')
 
             if (user?.role === 'OUTSIDER') {
                 // Get session from localStorage (set during guest login) or fetch from API

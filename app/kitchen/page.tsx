@@ -490,23 +490,6 @@ export default function KitchenPage() {
                     >
                         <Volume2 size={20} />
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => logout()}
-                        style={{
-                            color: '#64748b',
-                            fontWeight: '700',
-                            gap: '8px',
-                            padding: '0 1.25rem',
-                            height: '44px',
-                            borderRadius: '12px',
-                            background: '#f8fafc'
-                        }}
-                    >
-                        <LogOut size={18} />
-                        Exit
-                    </Button>
                 </div>
             </div>
 

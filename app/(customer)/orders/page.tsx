@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/Loading'
 import { Utensils, Receipt } from 'lucide-react'
 import { useCart } from '@/lib/context/CartContext'
+import { BillPreviewModal, BillData } from '@/components/ui/BillPreviewModal'
 
 export default function OrdersPage() {
     const { user, logout } = useAuth()
@@ -22,6 +23,7 @@ export default function OrdersPage() {
     const [loading, setLoading] = useState(true)
     const [activeSession, setActiveSession] = useState<any>(null)
     const [endingSession, setEndingSession] = useState(false)
+    const [billPreview, setBillPreview] = useState<BillData | null>(null)
 
     useEffect(() => {
         // If neither user nor orderIdParam, we can't show anything
@@ -116,34 +118,52 @@ export default function OrdersPage() {
             return
         }
 
-        // CASE 3: Active session exists with orders
+        // CASE 3: No active session but has orders (session may have already ended)
+        if (!activeSession) {
+            alert("No active session found. Your session may have already ended.")
+            return
+        }
+
+        // CASE 4: Active session exists with orders
         const confirmed = confirm(
             "Request your bill?\n\n" +
-            "A waiter will bring the bill to your table. You can still add more orders if you change your mind."
+            "This will generate your bill and end your session. You can print or save it as PDF."
         )
 
         if (!confirmed) return
 
         setEndingSession(true)
         try {
-            const response = await fetch('/api/bills/request', {
+            // Generate a consolidated session bill
+            const response = await fetch('/api/bills/session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionId: activeSession.id,
-                    userId: user?.id
+                    paymentMethod: 'cash'
                 })
             })
 
             const data = await response.json()
-            if (data.success) {
-                alert(data.message || "Bill request sent! A waiter will bring your bill shortly.")
+            if (data.success && data.bill) {
+                // Show the bill preview modal
+                setBillPreview({
+                    id: data.bill.id,
+                    billNumber: data.bill.billNumber,
+                    items: data.bill.items || [],
+                    itemsTotal: data.bill.itemsTotal,
+                    discountAmount: data.bill.discountAmount,
+                    finalTotal: data.bill.finalTotal,
+                    paymentMethod: data.bill.paymentMethod,
+                    createdAt: new Date().toISOString(),
+                    sessionDetails: data.bill.sessionDetails
+                })
             } else {
-                alert(`Failed to request bill: ${data.error}`)
+                alert(`Failed to generate bill: ${data.error || 'Unknown error'}`)
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to request bill. Please ask a waiter directly.")
+            alert("Failed to generate bill. Please ask a waiter directly.")
         } finally {
             setEndingSession(false)
         }
@@ -153,8 +173,26 @@ export default function OrdersPage() {
         return <Loading fullScreen message="Fetching your order status..." />
     }
 
+    const handleBillPreviewClose = () => {
+        setBillPreview(null)
+    }
+
+    const handlePrintComplete = () => {
+        setBillPreview(null)
+        // Optionally refresh session data
+        setActiveSession(null)
+    }
+
     return (
         <div className="container fade-in" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-12)' }}>
+            {/* Bill Preview Modal */}
+            {billPreview && (
+                <BillPreviewModal
+                    bill={billPreview}
+                    onClose={handleBillPreviewClose}
+                    onPrintComplete={handlePrintComplete}
+                />
+            )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
                 <Link href={user ? "/home" : "/menu"} style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}>
                     <ChevronLeft size={32} />
