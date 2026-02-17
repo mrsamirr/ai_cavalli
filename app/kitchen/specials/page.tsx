@@ -111,14 +111,18 @@ export default function KitchenSpecialsPage() {
       return;
     }
 
-    // 2. Add as Special
-    const { error: specialError } = await supabase
-      .from("daily_specials")
-      .insert({
+    // 2. Add as Special (via API to bypass RLS)
+    const specialRes = await fetch('/api/kitchen/specials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         menu_item_id: item.id,
-        period: period,
+        period,
         date: new Date().toISOString().split("T")[0],
-      });
+      }),
+    });
+    const specialResult = await specialRes.json();
+    const specialError = specialRes.ok ? null : { message: specialResult.error };
 
     if (!specialError) {
       setIsCreatingNew(false);
@@ -151,25 +155,42 @@ export default function KitchenSpecialsPage() {
     }
 
     setLoading(true);
-    const { error } = await supabase.from("daily_specials").insert({
-      menu_item_id: menuItemId,
-      period: period,
-      date: new Date().toISOString().split("T")[0],
-    });
-
-    if (error) {
-      console.error('Error adding special:', error);
-      alert("Failed to add special: " + error.message);
-    } else {
-      setSelectedItem("");
-      await fetchData();
+    try {
+      const res = await fetch('/api/kitchen/specials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          menu_item_id: menuItemId,
+          period,
+          date: new Date().toISOString().split("T")[0],
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        console.error('Error adding special:', result.error);
+        alert("Failed to add special: " + result.error);
+      } else {
+        setSelectedItem("");
+        await fetchData();
+      }
+    } catch (err: any) {
+      console.error('Error adding special:', err);
+      alert("Failed to add special: " + err.message);
     }
     setLoading(false);
   }
 
   async function removeSpecial(id: string) {
     setLoading(true);
-    await supabase.from("daily_specials").delete().eq("id", id);
+    try {
+      const res = await fetch(`/api/kitchen/specials?id=${id}`, { method: 'DELETE' });
+      const result = await res.json();
+      if (!res.ok) {
+        alert("Failed to remove special: " + result.error);
+      }
+    } catch (err: any) {
+      alert("Failed to remove special: " + err.message);
+    }
     await fetchData();
     setLoading(false);
   }
