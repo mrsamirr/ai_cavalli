@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(request: NextRequest) {
@@ -16,7 +15,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Use service role client to bypass RLS for bill generation
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
+        const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, supabaseServiceKey)
 
         // AUTH GUARD: Only staff, kitchen_manager, or admin can generate bills
         const authHeader = request.headers.get('Authorization')

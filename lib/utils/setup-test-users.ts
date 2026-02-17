@@ -9,7 +9,6 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 interface TestUser {
@@ -51,7 +50,7 @@ async function setupTestUsers() {
     try {
         console.log('🔧 Setting up test users...\n')
 
-        const admin = createClient(supabaseUrl, serviceRoleKey)
+        const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey)
 
         for (const testUser of testUsers) {
             console.log(`Creating ${testUser.role} user: ${testUser.name}`)

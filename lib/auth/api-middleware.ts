@@ -8,7 +8,6 @@ import { createClient } from '@supabase/supabase-js'
 import type { UserRole } from '@/lib/types/auth'
 import { RBAC, hasPermission as checkPermission } from '@/lib/types/auth'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 interface ApiResponse<T = any> {
@@ -28,7 +27,7 @@ export async function getAuthUser(request: NextRequest) {
         }
 
         const token = authHeader.replace('Bearer ', '')
-        const admin = createClient(supabaseUrl, serviceRoleKey)
+        const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey)
 
         // Look up user by session token
         const { data: profile, error: profileError } = await admin
@@ -141,7 +140,7 @@ export async function logAudit(
     status: 'success' | 'failed' = 'success'
 ) {
     try {
-        const admin = createClient(supabaseUrl, serviceRoleKey)
+        const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey)
         await admin.from('auth_audit_log').insert([
             {
                 user_id: userId,

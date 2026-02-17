@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function POST(request: NextRequest) {
@@ -29,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const client = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, supabaseServiceKey);
 
     // AUTH GUARD: Two modes of authentication
     // 1. Supabase auth token (for staff/riders)
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
       const {
         data: { user: requester },
         error: authError,
-      } = await supabase.auth.getUser(token);
+      } = await client.auth.getUser(token);
 
       if (!authError && requester && requester.id === userId) {
         isAuthorized = true;
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // If not authorized via token, check if this is a valid guest with active session
     if (!isAuthorized && sessionId) {
-      const { data: session } = await supabase
+      const { data: session } = await client
         .from("guest_sessions")
         .select("id, user_id, status")
         .eq("id", sessionId)
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Fetch user profile and normalize role
-    const { data: userData } = await supabase
+    const { data: userData } = await client
       .from("users")
       .select("name, email, role")
       .eq("id", userId)
@@ -115,7 +114,7 @@ export async function POST(request: NextRequest) {
     let menuItems: any[] = [];
 
     if (itemIds.length > 0) {
-      const { data: fetchedItems, error: menuError } = await supabase
+      const { data: fetchedItems, error: menuError } = await client
         .from("menu_items")
         .select("id, name, price, available")
         .in("id", itemIds);
@@ -164,7 +163,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Create the order
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await client
       .from("orders")
       .insert({
         user_id: userId,
@@ -199,7 +198,7 @@ export async function POST(request: NextRequest) {
     }));
 
     if (orderItemsToInsert.length > 0) {
-      const { error: itemsError } = await supabase
+      const { error: itemsError } = await client
         .from("order_items")
         .insert(orderItemsToInsert);
 
