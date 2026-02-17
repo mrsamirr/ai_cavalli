@@ -58,14 +58,13 @@ export async function POST(request: NextRequest) {
             // Normalize role for comparison (handle both old and new DB values)
             const rawRole = (user.role || '').toUpperCase()
             const userRole = rawRole === 'KITCHEN_MANAGER' ? 'KITCHEN'
-                : rawRole === 'STAFF' ? 'KITCHEN'
                 : rawRole === 'GUEST' ? 'OUTSIDER'
                 : rawRole
             
             console.log('LOGIN DEBUG: Found user:', { id: user.id, phone: user.phone, role: user.role, rawRole, userRole, hasPin: !!user.pin, hasPinHash: !!user.pin_hash })
 
-            // Only STUDENT/KITCHEN/ADMIN can use PIN login
-            if (!['STUDENT', 'KITCHEN', 'ADMIN'].includes(userRole)) {
+            // Only STUDENT/STAFF/KITCHEN/ADMIN can use PIN login
+            if (!['STUDENT', 'STAFF', 'KITCHEN', 'ADMIN'].includes(userRole)) {
                 return NextResponse.json(
                     { success: false, error: 'Use guest check-in for this account' },
                     { status: 403 }
@@ -126,7 +125,7 @@ export async function POST(request: NextRequest) {
 
             if (staffUser) {
                 const staffRole = (staffUser.role || '').toUpperCase()
-                if (['STUDENT', 'KITCHEN', 'ADMIN'].includes(staffRole)) {
+                if (['STUDENT', 'STAFF', 'KITCHEN', 'ADMIN'].includes(staffRole)) {
                     return NextResponse.json(
                         { success: false, error: 'This phone is registered to staff. Use staff login.' },
                         { status: 400 }

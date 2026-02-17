@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
             case 'OUTSIDER': return '/home'
             case 'KITCHEN': return '/kitchen'
             case 'ADMIN': return '/kitchen'
+            case 'STAFF': return '/home'
             case 'STUDENT':
             default: return '/home'
         }

@@ -187,17 +187,17 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <h2 style={{ fontSize: '1.5rem', margin: 0 }}>{userDetails?.name || 'Ai Cavalli Member'}</h2>
-                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.875rem' }}>{role === 'STUDENT' ? 'RIDER' : role} ACCOUNT</p>
+                                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.875rem' }}>{role === 'STUDENT' || role === 'STAFF' ? 'RIDER' : role} ACCOUNT</p>
                             </div>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-6)', marginBottom: 'var(--space-8)' }}>
                             <div style={{ padding: 'var(--space-4)', background: 'var(--background)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: 600 }}>
-                                    {role === 'STUDENT' ? 'PHONE NUMBER' : 'EMAIL ADDRESS'}
+                                    {role === 'STUDENT' || role === 'STAFF' ? 'PHONE NUMBER' : 'EMAIL ADDRESS'}
                                 </p>
                                 <p style={{ fontWeight: 700, margin: 0 }}>
-                                    {role === 'STUDENT'
+                                    {role === 'STUDENT' || role === 'STAFF'
                                         ? (userDetails?.phone || 'Not set')
                                         : (userDetails?.email || 'Not set')}
                                 </p>

@@ -33,7 +33,8 @@ export default function CartPage() {
         try {
             // Check for virtual items
             const hasRegularMeal = items.some(item => item.itemId === 'REGULAR_MEAL_VIRTUAL')
-            const finalNotes = hasRegularMeal ? 'REGULAR_STAFF_MEAL' : notes
+            const isStaffUser = user?.role === 'STAFF'
+            const finalNotes = hasRegularMeal && isStaffUser ? 'REGULAR_STAFF_MEAL' : notes
 
             // 1. Manage Guest Session if applicable
             let sessionId = null

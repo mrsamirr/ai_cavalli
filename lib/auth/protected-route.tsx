@@ -37,6 +37,7 @@ export function ProtectedRoute({ children, requiredRoles, fallbackPath = '/login
                     case 'ADMIN':
                         router.push('/kitchen')
                         break
+                    case 'STAFF':
                     case 'STUDENT':
                     default:
                         router.push('/home')

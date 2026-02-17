@@ -308,7 +308,7 @@ export default function KitchenPage() {
         return orders.filter(order => {
             if (filter === 'guest') return order.guest_info !== null || order.user?.role === 'OUTSIDER'
             if (filter === 'rider') return order.user_id !== null && order.user?.role === 'STUDENT'
-            if (filter === 'staff') return order.user_id !== null && order.user?.role === 'STUDENT'
+            if (filter === 'staff') return order.user_id !== null && order.user?.role === 'STAFF'
             return true
         })
     }, [orders, filter])
@@ -409,6 +409,10 @@ export default function KitchenPage() {
     const getOrderTypeBadge = (order: Order) => {
         if (order.guest_info || order.user?.role === 'OUTSIDER') return { label: 'GUEST', color: '#9333ea', icon: User }
         if (order.user?.role === 'STUDENT') return { label: 'RIDER', color: '#2563eb', icon: LayoutDashboard }
+        if (order.user?.role === 'STAFF') {
+            if (order.notes === 'REGULAR_STAFF_MEAL') return { label: 'REGULAR MEAL', color: '#3B82F6', icon: Shield }
+            return { label: 'STAFF', color: '#059669', icon: Shield }
+        }
         if (order.user?.role === 'KITCHEN') {
             if (order.notes === 'REGULAR_STAFF_MEAL') return { label: 'REGULAR MEAL', color: '#3B82F6', icon: Shield }
             return { label: 'STAFF', color: '#059669', icon: Shield }

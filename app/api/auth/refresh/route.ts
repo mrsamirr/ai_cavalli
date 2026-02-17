@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
         // Normalize role (handle old DB values)
         const rawRole = (user.role || '').toUpperCase()
         const normalizedRole = rawRole === 'KITCHEN_MANAGER' ? 'KITCHEN'
-            : rawRole === 'STAFF' ? 'KITCHEN'
             : rawRole === 'GUEST' ? 'OUTSIDER'
             : rawRole
 
