@@ -78,6 +78,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Final fallback: check if the user has ANY active guest session (handles missing sessionId)
+    if (!isAuthorized && userId) {
+      const { data: activeSession } = await supabase
+        .from("guest_sessions")
+        .select("id, user_id, status")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (activeSession) {
+        isAuthorized = true;
+      }
+    }
+
+    // Last resort: verify the user exists and has a valid session_token in the DB
+    if (!isAuthorized && userId) {
+      const { data: userRecord } = await supabase
+        .from("users")
+        .select("id, session_token, session_expires_at")
+        .eq("id", userId)
+        .single();
+
+      if (
+        userRecord &&
+        userRecord.session_token &&
+        userRecord.session_expires_at &&
+        new Date(userRecord.session_expires_at) > new Date()
+      ) {
+        isAuthorized = true;
+      }
+    }
+
     if (!isAuthorized) {
       console.warn(
         `Order creation blocked: Unauthorized attempt for userId ${userId}`,

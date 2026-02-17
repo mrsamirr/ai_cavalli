@@ -372,12 +372,15 @@ export function MenuItemSelector({
           style={{
             display: "flex",
             gap: "var(--space-2)",
-            padding: "var(--space-8) var(--space-6)",
+            padding: "var(--space-3) var(--space-4)",
             borderBottom: "1px solid var(--border)",
             overflowX: "auto",
             backgroundColor: "white",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
+            position: "sticky",
+            top: 0,
+            zIndex: 10,
           }}
         >
           <CategoryBadge

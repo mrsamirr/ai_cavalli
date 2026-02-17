@@ -23,6 +23,22 @@ export default function CartPage() {
     const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>('indoor')
     const [notes, setNotes] = useState('')
 
+    // Auto-fill table and guests from guest session (set during signup)
+    useEffect(() => {
+        if (user?.role === 'OUTSIDER') {
+            const storedSession = localStorage.getItem('guest_session')
+            if (storedSession) {
+                try {
+                    const session = JSON.parse(storedSession)
+                    if (session.table_name) setTableName(session.table_name)
+                    if (session.num_guests) setNumGuests(String(session.num_guests))
+                } catch (e) {
+                    console.error('Failed to parse guest session:', e)
+                }
+            }
+        }
+    }, [user])
+
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault()
