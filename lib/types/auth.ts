@@ -1,9 +1,9 @@
 /**
  * Unified Authentication & RBAC Types
- * Roles: STUDENT, OUTSIDER, KITCHEN, ADMIN
+ * Roles: STUDENT, STAFF, OUTSIDER, KITCHEN, ADMIN
  */
 
-export type UserRole = 'STUDENT' | 'OUTSIDER' | 'KITCHEN' | 'ADMIN'
+export type UserRole = 'STUDENT' | 'STAFF' | 'OUTSIDER' | 'KITCHEN' | 'ADMIN'
 
 export interface AuthUser {
     id: string
@@ -74,6 +74,17 @@ export const RBAC = {
             'update_own_profile'
         ]
     },
+    STAFF: {
+        name: 'Staff',
+        permissions: [
+            'view_menu',
+            'create_order',
+            'view_own_orders',
+            'cancel_own_order',
+            'view_own_profile',
+            'update_own_profile'
+        ]
+    },
     OUTSIDER: {
         name: 'Guest',
         permissions: [
@@ -124,13 +135,13 @@ export const routeAccess: Record<string, UserRole[]> = {
     '/login': [],
     '/auth/callback': [],
 
-    // Student and Guest/Outsider routes
-    '/home': ['STUDENT', 'OUTSIDER'],
-    '/menu': ['STUDENT', 'OUTSIDER'],
-    '/cart': ['STUDENT', 'OUTSIDER'],
-    '/orders': ['STUDENT', 'OUTSIDER'],
-    '/profile': ['STUDENT', 'OUTSIDER'],
-    '/status': ['OUTSIDER', 'STUDENT'],
+    // Student/Staff and Guest/Outsider routes
+    '/home': ['STUDENT', 'STAFF', 'OUTSIDER'],
+    '/menu': ['STUDENT', 'STAFF', 'OUTSIDER'],
+    '/cart': ['STUDENT', 'STAFF', 'OUTSIDER'],
+    '/orders': ['STUDENT', 'STAFF', 'OUTSIDER'],
+    '/profile': ['STUDENT', 'STAFF', 'OUTSIDER'],
+    '/status': ['OUTSIDER', 'STUDENT', 'STAFF'],
 
     // Kitchen routes
     '/kitchen': ['KITCHEN', 'ADMIN'],
@@ -148,12 +159,12 @@ export const routeAccess: Record<string, UserRole[]> = {
 
     // API routes
     '/api/auth/login': [],
-    '/api/auth/logout': ['STUDENT', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
-    '/api/auth/refresh': ['STUDENT', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
-    '/api/orders/create': ['STUDENT', 'OUTSIDER'],
-    '/api/orders/list': ['STUDENT', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
+    '/api/auth/logout': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
+    '/api/auth/refresh': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
+    '/api/orders/create': ['STUDENT', 'STAFF', 'OUTSIDER'],
+    '/api/orders/list': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
     '/api/admin/users': ['ADMIN'],
-    '/api/users/profile': ['STUDENT', 'OUTSIDER', 'KITCHEN', 'ADMIN']
+    '/api/users/profile': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN']
 }
 
 /**
