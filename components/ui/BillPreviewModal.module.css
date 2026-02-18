@@ -1,18 +1,12 @@
     .overlay {
     position: fixed;
     top: 0;
-    left: 0;
     right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
     z-index: 9999;
     display: flex;
-    align-items: flex-start;
-    justify-content: center;
+    justify-content: flex-end;
     padding: 16px;
-    padding-top: max(16px, 5vh);
-    overflow-y: auto;
+    pointer-events: none;
     animation: fadeIn 0.2s ease;
 }
 
@@ -22,7 +16,7 @@
 }
 
 @keyframes slideUp {
-    from { transform: translateY(30px); opacity: 0; }
+    from { transform: translateY(-20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
 
@@ -30,14 +24,15 @@
     background: white;
     border-radius: 16px;
     width: 100%;
-    max-width: 420px;
-    max-height: 85vh;
+    max-width: 400px;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.08);
     animation: slideUp 0.3s ease;
     overflow: hidden;
     flex-shrink: 0;
+    pointer-events: auto;
 }
 
 .header {
@@ -327,9 +322,8 @@
 @media print {
     .overlay {
         position: static;
-        background: none;
-        backdrop-filter: none;
         padding: 0;
+        pointer-events: auto;
     }
 
     .modal {

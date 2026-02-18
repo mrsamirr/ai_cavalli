@@ -426,7 +426,7 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
                                 <span>Subtotal:</span>
                                 <span>₹{bill.itemsTotal.toFixed(2)}</span>
                             </div>
-                            {bill.discountAmount && bill.discountAmount > 0 && (
+                            {bill.discountAmount != null && bill.discountAmount > 0 && (
                                 <div className={`${styles.totalRow} ${styles.discount}`}>
                                     <span>Discount:</span>
                                     <span>-₹{bill.discountAmount.toFixed(2)}</span>

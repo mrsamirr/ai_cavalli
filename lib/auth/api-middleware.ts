@@ -53,7 +53,13 @@ export async function getAuthUser(request: NextRequest) {
             console.log(`Session auto-extended for user ${profile.id} via api-middleware`)
         }
 
-        return { user: { ...profile, role: (profile.role || '').toUpperCase() }, error: undefined }
+        // Normalize role — DB may store 'kitchen_manager', 'guest', etc.
+        const rawRole = (profile.role || '').toUpperCase()
+        const normalizedRole = rawRole === 'KITCHEN_MANAGER' ? 'KITCHEN'
+            : rawRole === 'GUEST' ? 'OUTSIDER'
+            : rawRole
+
+        return { user: { ...profile, role: normalizedRole }, error: undefined }
     } catch (error) {
         console.error('Auth user fetch error:', error)
         return { user: null, error: 'Authentication failed' }

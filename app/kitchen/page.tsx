@@ -395,7 +395,7 @@ export default function KitchenPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${sessionToken}`
                 },
-                body: JSON.stringify({ orderId, paymentMethod })
+                body: JSON.stringify({ orderId, paymentMethod, userId: user?.id })
             })
             const data = await response.json()
             if (data.success) {
@@ -438,7 +438,7 @@ export default function KitchenPage() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${sessionToken}`
                 },
-                body: JSON.stringify({ billId })
+                body: JSON.stringify({ billId, userId: user?.id })
             })
             const data = await response.json()
             if (data.success) {

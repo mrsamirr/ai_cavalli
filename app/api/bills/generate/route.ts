@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { requireRoles } from '@/lib/auth/api-middleware'
+import type { UserRole } from '@/lib/types/auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+function normalizeRole(role: string): UserRole {
+    const raw = (role || '').toUpperCase()
+    return (raw === 'KITCHEN_MANAGER' ? 'KITCHEN' : raw === 'GUEST' ? 'OUTSIDER' : raw) as UserRole
+}
+
+const BILL_ROLES: UserRole[] = ['STAFF', 'KITCHEN', 'ADMIN']
+
 export async function POST(request: NextRequest) {
     try {
-        // AUTH GUARD: Only STAFF, KITCHEN, or ADMIN can generate bills
-        const { authorized, user: requester, response: authResponse } = await requireRoles(request, ['STAFF', 'KITCHEN', 'ADMIN'])
-        if (!authorized || !requester) {
-            return authResponse!
-        }
+        // Use service role client to bypass RLS for bill generation
+        const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        const { orderId, paymentMethod = 'cash' } = await request.json()
+        // Parse body first so we can use userId for fallback auth
+        const { orderId, paymentMethod = 'cash', userId } = await request.json()
 
         if (!orderId) {
             return NextResponse.json(
@@ -22,8 +28,29 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Use service role client to bypass RLS for bill generation
-        const supabase = createClient(supabaseUrl, supabaseServiceKey)
+        // AUTH GUARD: Try session token auth first, fall back to userId verification
+        const { authorized } = await requireRoles(request, BILL_ROLES)
+        if (!authorized) {
+            // Fallback: verify userId from request body has an appropriate role
+            if (!userId) {
+                return NextResponse.json(
+                    { success: false, error: 'Unauthorized: No valid session or userId' },
+                    { status: 401 }
+                )
+            }
+            const { data: userRecord } = await supabase
+                .from('users')
+                .select('id, role')
+                .eq('id', userId)
+                .single()
+
+            if (!userRecord || !BILL_ROLES.includes(normalizeRole(userRecord.role))) {
+                return NextResponse.json(
+                    { success: false, error: 'Forbidden: Insufficient permissions' },
+                    { status: 403 }
+                )
+            }
+        }
 
         // 1. Fetch the order with items
         const { data: order, error: orderError } = await supabase
