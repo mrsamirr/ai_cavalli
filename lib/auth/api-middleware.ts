@@ -41,9 +41,16 @@ export async function getAuthUser(request: NextRequest) {
             return { user: null, error: 'Invalid session token' }
         }
 
-        // Check expiry
+        // Check expiry — auto-extend if expired (sliding window session)
         if (profile.session_expires_at && new Date(profile.session_expires_at) < new Date()) {
-            return { user: null, error: 'Session expired' }
+            // Token matched (query found the user by session_token) but it's expired
+            // Auto-extend by 24 hours instead of rejecting
+            const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+            await admin
+                .from('users')
+                .update({ session_expires_at: newExpiry })
+                .eq('id', profile.id)
+            console.log(`Session auto-extended for user ${profile.id} via api-middleware`)
         }
 
         return { user: { ...profile, role: (profile.role || '').toUpperCase() }, error: undefined }

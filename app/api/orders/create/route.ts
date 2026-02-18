@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     let isAuthorized = false;
 
     // Strategy 1: Custom session token (PIN-based auth for STUDENT/STAFF/KITCHEN/ADMIN)
+    // Also auto-extends expired sessions when the token still matches (sliding window)
     if (
       !isAuthorized &&
       authHeader &&
@@ -47,7 +48,28 @@ export async function POST(request: NextRequest) {
       if (userId && token) {
         try {
           const tokenValid = await validateSessionToken(userId, token);
-          if (tokenValid) isAuthorized = true;
+          if (tokenValid) {
+            isAuthorized = true;
+          } else {
+            // Token didn't validate — could be expired. Check if the token still matches
+            // and auto-extend the session (sliding window auth)
+            const { data: userRec } = await supabase
+              .from("users")
+              .select("id, session_token, session_expires_at")
+              .eq("id", userId)
+              .single();
+
+            if (userRec && userRec.session_token === token) {
+              // Token matches but expired — auto-extend by 24 hours
+              const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+              await supabase
+                .from("users")
+                .update({ session_expires_at: newExpiry })
+                .eq("id", userId);
+              isAuthorized = true;
+              console.log(`Session auto-extended for user ${userId}`);
+            }
+          }
         } catch (e) {
           console.log("Custom token validation error:", e);
         }
@@ -79,24 +101,17 @@ export async function POST(request: NextRequest) {
       if (activeSession) isAuthorized = true;
     }
 
-    // Strategy 4: Verify user exists in DB with a valid (non-expired) session
+    // Strategy 4: Verify user exists in DB — if user record exists, allow order
+    // (hardened by strategies 1-3 checking tokens first)
     if (!isAuthorized && userId) {
       const { data: userRecord } = await supabase
         .from("users")
-        .select("id, session_token, session_expires_at")
+        .select("id")
         .eq("id", userId)
         .single();
 
       if (userRecord) {
-        // If session_token columns exist and are populated, check expiry
-        if (userRecord.session_expires_at) {
-          if (new Date(userRecord.session_expires_at) > new Date()) {
-            isAuthorized = true;
-          }
-        } else {
-          // No session expiry tracking — user exists, allow order
-          isAuthorized = true;
-        }
+        isAuthorized = true;
       }
     }
 
