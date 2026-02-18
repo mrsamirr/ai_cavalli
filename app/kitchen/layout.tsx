@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth/context'
 import { ProtectedRoute } from '@/lib/auth/protected-route'
 import { TopNav } from '@/components/layout/TopNav'
+import { PopupProvider } from '@/components/ui/Popup'
 
 export default function KitchenLayout({
     children,
@@ -55,6 +56,7 @@ export default function KitchenLayout({
                 <main style={{ padding: '2rem', background: '#f5f5f5', minHeight: 'calc(100vh - 60px)' }}>
                     {children}
                 </main>
+                <PopupProvider />
             </div>
         </ProtectedRoute>
     )

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireRoles } from '@/lib/auth/api-middleware'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -17,37 +18,10 @@ export async function POST(request: NextRequest) {
 
         const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-        // AUTH GUARD: Only staff, kitchen_manager, or admin can print bills
-        const authHeader = request.headers.get('Authorization')
-        if (!authHeader) {
-            return NextResponse.json(
-                { success: false, error: 'Authorization required' },
-                { status: 401 }
-            )
-        }
-
-        const token = authHeader.replace('Bearer ', '')
-        const { data: { user: requester }, error: authError } = await supabase.auth.getUser(token)
-
-        if (authError || !requester) {
-            return NextResponse.json(
-                { success: false, error: 'Invalid or expired session' },
-                { status: 401 }
-            )
-        }
-
-        // Verify role
-        const { data: profile } = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', requester.id)
-            .single()
-
-        if (!profile || !['staff', 'kitchen_manager', 'admin'].includes(profile.role)) {
-            return NextResponse.json(
-                { success: false, error: 'Unauthorized: Staff access required' },
-                { status: 403 }
-            )
+        // AUTH GUARD: Only STAFF, KITCHEN, or ADMIN can print bills
+        const { authorized, response: authResponse } = await requireRoles(request, ['STAFF', 'KITCHEN', 'ADMIN'])
+        if (!authorized) {
+            return authResponse!
         }
 
         // Fetch bill with items and order details
@@ -127,9 +101,72 @@ function formatBillForPrinting(bill: any) {
     })
 
     // Build bill text
+    // Build bold HTML receipt for browser print (much better thermal output than plain text)
+    const itemsHTML = items.map((item: any) => {
+        const name = item.item_name || 'Item'
+        const qty = item.quantity
+        const amount = `₹${item.subtotal.toFixed(2)}`
+        return `<tr>
+            <td style="text-align:left;padding:6px 0;"><b>${name}</b></td>
+            <td style="text-align:center;padding:6px 0;"><b>${qty}</b></td>
+            <td style="text-align:right;padding:6px 0;"><b>${amount}</b></td>
+        </tr>`
+    }).join('')
+
+    const htmlReceipt = `<!DOCTYPE html><html><head><style>
+        @page { size: 80mm auto; margin: 2mm; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Arial Black','Arial Bold',Arial,Helvetica,sans-serif; font-size:16px; font-weight:900;
+               width:80mm; max-width:80mm; padding:4mm; background:#fff; color:#000000;
+               -webkit-print-color-adjust:exact; print-color-adjust:exact;
+               -webkit-text-stroke:0.6px #000000;
+               text-shadow:0 0 0 #000,0.5px 0 0 #000,-0.5px 0 0 #000,0 0.5px 0 #000,0 -0.5px 0 #000; }
+        b, strong { font-weight:900; }
+        .c { text-align:center; }
+        .name { font-size:28px; font-weight:900; letter-spacing:3px;
+                -webkit-text-stroke:1.5px #000000;
+                text-shadow:0 0 1px #000,1px 0 0 #000,-1px 0 0 #000,0 1px 0 #000,0 -1px 0 #000; }
+        .sub { font-size:14px; font-weight:900; letter-spacing:2px; margin-top:4px; }
+        hr { border:none; border-top:3px solid #000000; margin:10px 0; }
+        .r { display:flex; justify-content:space-between; font-size:15px; font-weight:900; margin-bottom:5px; color:#000000; }
+        table { width:100%; border-collapse:collapse; }
+        .th { font-size:14px; font-weight:900; text-transform:uppercase; padding-bottom:6px;
+              letter-spacing:1px; border-bottom:2px solid #000000; }
+        td { font-size:15px; font-weight:900; color:#000000; padding:6px 0; }
+        .tr { font-size:16px; font-weight:900; margin:5px 0; display:flex; justify-content:space-between; color:#000000; }
+        .gt { display:flex; justify-content:space-between; font-size:22px; font-weight:900;
+              padding:8px 0; border-top:3px solid #000000; border-bottom:3px solid #000000;
+              -webkit-text-stroke:1.5px #000000;
+              text-shadow:0 0 1px #000,1px 0 0 #000,-1px 0 0 #000; }
+        .ft { text-align:center; margin-top:12px; font-size:17px; font-weight:900;
+              -webkit-text-stroke:0.8px #000000; }
+    </style></head><body>
+        <div class="c"><div class="name"><b>AI CAVALLI</b></div><div class="sub"><b>RESTAURANT & CAFE</b></div></div>
+        <hr>
+        <div class="r"><b>Bill No:</b><b>${bill.bill_number}</b></div>
+        <div class="r"><b>Date:</b><b>${dateStr} ${timeStr}</b></div>
+        <div class="r"><b>Table:</b><b>${order?.table_name || 'N/A'}</b></div>
+        <hr>
+        <table><thead><tr>
+            <th class="th" style="text-align:left;"><b>Item</b></th>
+            <th class="th" style="text-align:center;"><b>Qty</b></th>
+            <th class="th" style="text-align:right;"><b>Amt</b></th>
+        </tr></thead><tbody>${itemsHTML}</tbody></table>
+        <hr>
+        <div class="tr"><b>Subtotal:</b><b>₹${bill.items_total.toFixed(2)}</b></div>
+        ${bill.discount_amount > 0 ? `<div class="tr"><b>Discount:</b><b>-₹${bill.discount_amount.toFixed(2)}</b></div>` : ''}
+        <hr>
+        <div class="gt"><b>TOTAL:</b><b>₹${bill.final_total.toFixed(2)}</b></div>
+        ${bill.payment_method ? `<div class="tr"><b>Payment:</b><b>${bill.payment_method.toUpperCase()}</b></div>` : ''}
+        <hr>
+        <div class="ft"><b>Thank You! Visit Again!</b></div>
+        <div class="c" style="margin-top:4px;font-size:13px;font-weight:900;"><b>Powered by AI Cavalli</b></div>
+    </body></html>`
+
+    // Also keep plain text for raw printer fallback
     const lines = [
         '================================',
-        '    AI CAVALLI RESTAURANT',
+        '       AI CAVALLI RESTAURANT    ',
         '================================',
         `Bill No: ${bill.bill_number}`,
         `Date: ${dateStr} ${timeStr}`,
@@ -139,31 +176,31 @@ function formatBillForPrinting(bill: any) {
         '--------------------------------'
     ]
 
-    // Add items
     items.forEach((item: any) => {
         const name = item.item_name.substring(0, 18).padEnd(18)
         const qty = item.quantity.toString().padStart(3)
-        const amount = `₹${item.subtotal.toFixed(2)}`.padStart(9)
+        const amount = `Rs.${item.subtotal.toFixed(2)}`.padStart(9)
         lines.push(`${name}${qty}${amount}`)
     })
 
     lines.push('--------------------------------')
-    lines.push(`Items Total:           ₹${bill.items_total.toFixed(2)}`.padStart(32))
+    lines.push(`Subtotal:         Rs.${bill.items_total.toFixed(2)}`)
 
     if (bill.discount_amount > 0) {
         const discountPercent = ((bill.discount_amount / bill.items_total) * 100).toFixed(0)
-        lines.push(`Discount (${discountPercent}%):         ₹${bill.discount_amount.toFixed(2)}`.padStart(32))
+        lines.push(`Discount (${discountPercent}%):   -Rs.${bill.discount_amount.toFixed(2)}`)
     }
 
-    lines.push('--------------------------------')
-    lines.push(`FINAL TOTAL:           ₹${bill.final_total.toFixed(2)}`.padStart(32))
+    lines.push('================================')
+    lines.push(`TOTAL:            Rs.${bill.final_total.toFixed(2)}`)
     lines.push('================================')
 
     if (bill.payment_method) {
         lines.push(`Payment: ${bill.payment_method.toUpperCase()}`)
     }
 
-    lines.push('Thank you! Visit again!')
+    lines.push('')
+    lines.push('      Thank you! Visit again!')
     lines.push('================================')
     lines.push('')
     lines.push('')
@@ -171,6 +208,7 @@ function formatBillForPrinting(bill: any) {
     return {
         billNumber: bill.bill_number,
         text: lines.join('\n'),
+        html: htmlReceipt,
         lines: lines,
         metadata: {
             billId: bill.id,

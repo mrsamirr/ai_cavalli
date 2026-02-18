@@ -34,6 +34,8 @@ import {
 } from 'lucide-react'
 import { Loading } from '@/components/ui/Loading'
 import { MenuItemSelector } from '@/components/kitchen/MenuItemSelector'
+import { showError, showSuccess, showConfirm, showPopup } from '@/components/ui/Popup'
+import { BillPreviewModal, type BillData } from '@/components/ui/BillPreviewModal'
 
 interface OrderItem {
     id: string
@@ -80,6 +82,7 @@ export default function KitchenPage() {
     const [billRequests, setBillRequests] = useState<any[]>([])
     const [showMenuSelector, setShowMenuSelector] = useState(false)
     const [selectedOrderForMenu, setSelectedOrderForMenu] = useState<string | null>(null)
+    const [billPreview, setBillPreview] = useState<BillData | null>(null)
 
     const { user, logout, isLoading: authLoading } = useAuth()
     const router = useRouter()
@@ -287,12 +290,32 @@ export default function KitchenPage() {
             if (data.success) {
                 setBillData(data.bill)
                 setBillRequests(prev => prev.filter(r => r.id !== sessionId))
-                alert(`Bill ${data.bill.billNumber} generated! Total: ₹${data.bill.finalTotal}`)
+                // Show bill preview modal
+                if (data.bill) {
+                    setBillPreview({
+                        id: data.bill.id,
+                        billNumber: data.bill.billNumber || data.bill.bill_number || '',
+                        tableName: data.bill.sessionDetails?.tableName || data.bill.tableName || '',
+                        guestName: data.bill.sessionDetails?.guestName || '',
+                        items: (data.bill.items || []).map((i: any) => ({
+                            item_name: i.item_name || i.name || '',
+                            quantity: i.quantity,
+                            price: i.price,
+                            subtotal: i.subtotal || (i.quantity * i.price)
+                        })),
+                        itemsTotal: data.bill.itemsTotal || data.bill.items_total || 0,
+                        discountAmount: data.bill.discountAmount || data.bill.discount_amount || 0,
+                        finalTotal: data.bill.finalTotal || data.bill.final_total || 0,
+                        paymentMethod: 'cash',
+                        sessionDetails: data.bill.sessionDetails
+                    })
+                }
+                showSuccess('Bill Generated', `Bill ${data.bill.billNumber || data.bill.bill_number} — ₹${data.bill.finalTotal || data.bill.final_total}`)
             } else {
-                alert(`Failed: ${data.error}`)
+                showError('Bill Failed', data.error || 'Failed to generate bill')
             }
         } catch (err) {
-            alert('Failed to generate bill')
+            showError('Error', 'Failed to generate bill')
         } finally {
             setGeneratingBill(null)
         }
@@ -320,7 +343,7 @@ export default function KitchenPage() {
             .eq('id', orderId)
 
         if (error) {
-            alert('Failed to update status')
+            showError('Update Failed', 'Failed to update order status')
         } else {
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus as any } : o))
         }
@@ -333,7 +356,7 @@ export default function KitchenPage() {
             .eq('id', orderId)
 
         if (error) {
-            alert('Failed to apply discount')
+            showError('Discount Failed', 'Failed to apply discount')
         } else {
             setOrders(prev => prev.map(o => o.id === orderId ? { ...o, discount_amount: amount } : o))
         }
@@ -345,17 +368,18 @@ export default function KitchenPage() {
             .from('order_items')
             .update({ quantity: newQuantity })
             .eq('id', orderItemId)
-        if (error) alert(`Failed to update quantity: ${error.message}`)
+        if (error) showError('Update Failed', error.message)
         else await fetchOrders()
     }
 
     async function deleteOrderItem(orderItemId: string, orderId: string) {
-        if (!confirm('Delete this item from the order?')) return
+        const ok = await showConfirm('Delete Item', 'Remove this item from the order?')
+        if (!ok) return
         const { error } = await supabase
             .from('order_items')
             .delete()
             .eq('id', orderItemId)
-        if (error) alert(`Failed to delete item: ${error.message}`)
+        if (error) showError('Delete Failed', error.message)
         else await fetchOrders()
     }
 
@@ -364,9 +388,13 @@ export default function KitchenPage() {
         if (!order || !order.items?.length || order.billed) return
         setGeneratingBill(orderId)
         try {
+            const sessionToken = localStorage.getItem('session_token') || ''
             const response = await fetch('/api/bills/generate', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
                 body: JSON.stringify({ orderId, paymentMethod })
             })
             const data = await response.json()
@@ -374,35 +402,67 @@ export default function KitchenPage() {
                 setBillData(data.bill)
                 await fetchOrders()
                 await fetchCompletedOrders()
-                await handlePrintBill(data.bill.id)
+                // Show bill preview modal
+                setBillPreview({
+                    id: data.bill.id,
+                    billNumber: data.bill.billNumber || '',
+                    tableName: data.bill.orderDetails?.tableName || order.table_name || '',
+                    guestName: order.guest_info?.name || order.user?.name || '',
+                    items: (data.bill.items || []).map((i: any) => ({
+                        item_name: i.item_name || i.name || '',
+                        quantity: i.quantity,
+                        price: i.price,
+                        subtotal: i.subtotal || (i.quantity * i.price)
+                    })),
+                    itemsTotal: data.bill.itemsTotal || 0,
+                    discountAmount: data.bill.discountAmount || 0,
+                    finalTotal: data.bill.finalTotal || 0,
+                    paymentMethod,
+                })
+            } else {
+                showError('Bill Failed', data.error || 'Failed to generate bill')
             }
-        } catch (error) { console.error(error) } finally { setGeneratingBill(null) }
+        } catch (error) {
+            console.error(error)
+            showError('Error', 'Failed to generate bill')
+        } finally { setGeneratingBill(null) }
     }
 
     async function handlePrintBill(billId: string) {
         setPrintingBill(billId)
         try {
+            const sessionToken = localStorage.getItem('session_token') || ''
             const response = await fetch('/api/bills/print', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionToken}`
+                },
                 body: JSON.stringify({ billId })
             })
             const data = await response.json()
             if (data.success) {
                 const printWindow = window.open('', '_blank', 'width=400,height=600')
                 if (printWindow) {
-                    printWindow.document.write(`<html><body>${data.printData.text}</body></html>`)
+                    // Use styled HTML (not plain text) for dark thermal output
+                    printWindow.document.write(data.printData.html || `<html><body><pre style="font-family:Arial,sans-serif;font-size:16px;font-weight:900;color:#000;">${data.printData.text}</pre></body></html>`)
                     printWindow.document.close()
+                    printWindow.onload = () => { printWindow.focus(); printWindow.print() }
                 }
+            } else {
+                showError('Print Failed', data.error || 'Failed to print bill')
             }
-        } catch (error) { console.error(error) } finally { setPrintingBill(null) }
+        } catch (error) {
+            console.error(error)
+            showError('Error', 'Failed to print bill')
+        } finally { setPrintingBill(null) }
     }
 
     async function addItemToOrder(orderId: string, menuItemId: string) {
         const menuItem = menuItems.find(m => m.id === menuItemId)
         if (!menuItem) return
         const { error } = await supabase.from('order_items').insert({ order_id: orderId, menu_item_id: menuItemId, quantity: 1, price: menuItem.price })
-        if (error) alert(error.message)
+        if (error) showError('Add Failed', error.message)
         else await fetchOrders()
     }
 
@@ -853,7 +913,41 @@ export default function KitchenPage() {
                                             {order.status === 'ready' && <Button onClick={() => updateStatus(order.id, 'completed')} size="lg" variant="outline" style={{ width: '100%', height: '56px', fontWeight: 800, color: 'var(--text)', border: '2px solid var(--border)' }}>HAND OVER</Button>}
                                         </div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 'var(--space-2)' }}>
-                                            <button onClick={() => { const p = prompt('Enter discount %:'); if (p) updateDiscount(order.id, parseFloat(p)) }} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Percent size={18} /></button>
+                                            <button onClick={async () => {
+                                                const result = await new Promise<string | null>((resolve) => {
+                                                    let val = ''
+                                                    showPopup({
+                                                        type: 'confirm',
+                                                        title: 'Apply Discount',
+                                                        message: 'Enter discount percentage (0-100):',
+                                                        confirmText: 'Apply',
+                                                        cancelText: 'Cancel',
+                                                        onConfirm: () => {
+                                                            const input = document.getElementById('discount-input') as HTMLInputElement
+                                                            resolve(input?.value || null)
+                                                        },
+                                                        onCancel: () => resolve(null),
+                                                    })
+                                                    // Inject an input field after popup renders
+                                                    setTimeout(() => {
+                                                        const msgEl = document.querySelector('[class*="popupMessage"]')
+                                                        if (msgEl && !document.getElementById('discount-input')) {
+                                                            const inp = document.createElement('input')
+                                                            inp.id = 'discount-input'
+                                                            inp.type = 'number'
+                                                            inp.min = '0'
+                                                            inp.max = '100'
+                                                            inp.placeholder = 'e.g. 10'
+                                                            inp.style.cssText = 'width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:12px;font-size:1.1rem;font-weight:700;margin-top:12px;text-align:center;outline:none;'
+                                                            inp.addEventListener('focus', () => inp.style.borderColor = 'var(--primary)')
+                                                            inp.addEventListener('blur', () => inp.style.borderColor = 'var(--border)')
+                                                            msgEl.after(inp)
+                                                            inp.focus()
+                                                        }
+                                                    }, 50)
+                                                })
+                                                if (result) updateDiscount(order.id, parseFloat(result))
+                                            }} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Percent size={18} /></button>
                                             <button onClick={() => setEditingOrderId(editingOrderId === order.id ? null : order.id)} style={{ height: '48px', borderRadius: 'var(--radius)', border: `1px solid ${editingOrderId === order.id ? '#DC2626' : 'var(--border)'}`, background: editingOrderId === order.id ? '#FEE2E2' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: editingOrderId === order.id ? '#DC2626' : 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}>{editingOrderId === order.id ? <><XIcon size={16} /> Cancel</> : <><Pencil size={16} /> Edit</>}</button>
                                             {order.billed ? <div style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid #10B981', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#059669', fontWeight: 600, fontSize: '0.875rem' }}><CheckCircle2 size={16} /> Billed</div> : <button onClick={() => handleGenerateBill(order.id, 'cash')} disabled={generatingBill === order.id || printingBill !== null} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}><Printer size={16} /> {generatingBill === order.id ? '...' : 'Bill'}</button>}
                                         </div>
@@ -876,6 +970,13 @@ export default function KitchenPage() {
                         setShowMenuSelector(false)
                         setSelectedOrderForMenu(null)
                     }}
+                />
+            )}
+
+            {billPreview && (
+                <BillPreviewModal
+                    bill={billPreview}
+                    onClose={() => setBillPreview(null)}
                 />
             )}
 

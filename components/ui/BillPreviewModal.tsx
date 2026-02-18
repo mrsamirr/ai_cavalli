@@ -62,9 +62,9 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
     const buildPrintHTML = useCallback(() => {
         const itemsHTML = bill.items.map(item => `
             <tr>
-                <td style="text-align:left;padding:3px 0;font-size:12px;">${item.item_name}</td>
-                <td style="text-align:center;padding:3px 0;font-size:12px;color:#666;">${item.quantity}</td>
-                <td style="text-align:right;padding:3px 0;font-size:12px;font-weight:600;">₹${item.subtotal.toFixed(2)}</td>
+                <td style="text-align:left;padding:6px 0;"><b>${item.item_name}</b></td>
+                <td style="text-align:center;padding:6px 0;"><b>${item.quantity}</b></td>
+                <td style="text-align:right;padding:6px 0;"><b>₹${item.subtotal.toFixed(2)}</b></td>
             </tr>
         `).join('')
 
@@ -80,66 +80,119 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
+            font-family: 'Arial Black', 'Arial Bold', Arial, Helvetica, sans-serif;
+            font-size: 16px;
+            font-weight: 900;
             width: 80mm;
             max-width: 80mm;
             padding: 4mm;
             background: white;
-            color: #1a1a1a;
+            color: #000000;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
+            -webkit-text-stroke: 0.6px #000000;
+            text-shadow: 0 0 0 #000, 0.5px 0 0 #000, -0.5px 0 0 #000, 0 0.5px 0 #000, 0 -0.5px 0 #000;
         }
+        b, strong { font-weight: 900; }
         .center { text-align: center; }
-        .bold { font-weight: bold; }
-        .restaurant-name { font-size: 16px; font-weight: 900; letter-spacing: 1px; }
-        .subtitle { font-size: 10px; color: #666; margin-top: 2px; }
-        hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
-        .info { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; }
-        .info .label { color: #666; }
-        .info .value { font-weight: 600; }
+        .restaurant-name {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #000000;
+            -webkit-text-stroke: 1.5px #000000;
+            text-shadow: 0 0 1px #000, 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #000000;
+            font-weight: 900;
+            margin-top: 4px;
+            letter-spacing: 2px;
+        }
+        hr {
+            border: none;
+            border-top: 3px solid #000000;
+            margin: 10px 0;
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 15px;
+            font-weight: 900;
+            margin-bottom: 5px;
+            color: #000000;
+        }
         table { width: 100%; border-collapse: collapse; }
         .items-header th {
-            font-size: 10px;
+            font-size: 14px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #444;
-            padding-bottom: 4px;
-            font-weight: 700;
+            letter-spacing: 1px;
+            color: #000000;
+            padding-bottom: 6px;
+            font-weight: 900;
+            border-bottom: 2px solid #000000;
         }
-        .total-row { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; }
-        .discount { color: #10B981; }
+        td {
+            font-size: 15px;
+            font-weight: 900;
+            color: #000000;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: 900;
+            margin: 5px 0;
+            color: #000000;
+        }
         .grand-total {
             display: flex;
             justify-content: space-between;
-            font-size: 14px;
+            font-size: 22px;
             font-weight: 900;
-            padding: 6px 0;
+            padding: 8px 0;
+            color: #000000;
+            border-top: 3px solid #000000;
+            border-bottom: 3px solid #000000;
+            -webkit-text-stroke: 1.5px #000000;
+            text-shadow: 0 0 1px #000, 1px 0 0 #000, -1px 0 0 #000;
         }
-        .footer { text-align: center; margin-top: 10px; font-size: 11px; color: #666; }
-        .thank-you { font-weight: 700; font-size: 12px; color: #1a1a1a; }
+        .footer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 15px;
+            color: #000000;
+            font-weight: 900;
+        }
+        .thank-you {
+            font-weight: 900;
+            font-size: 17px;
+            color: #000000;
+            -webkit-text-stroke: 0.8px #000000;
+        }
     </style>
 </head>
 <body>
     <div class="center">
-        <div class="restaurant-name">AI CAVALLI</div>
-        <div class="subtitle">RESTAURANT & CAFE</div>
+        <div class="restaurant-name"><b>AI CAVALLI</b></div>
+        <div class="subtitle"><b>RESTAURANT & CAFE</b></div>
     </div>
     <hr>
-    <div class="info"><span class="label">Bill No:</span><span class="value">${bill.billNumber}</span></div>
-    <div class="info"><span class="label">Date:</span><span class="value">${dateStr}</span></div>
-    <div class="info"><span class="label">Time:</span><span class="value">${timeStr}</span></div>
-    ${tableName ? `<div class="info"><span class="label">Table:</span><span class="value">${tableName}</span></div>` : ''}
-    ${guestName ? `<div class="info"><span class="label">Guest:</span><span class="value">${guestName}</span></div>` : ''}
-    ${numGuests ? `<div class="info"><span class="label">Guests:</span><span class="value">${numGuests}</span></div>` : ''}
-    ${orderCount ? `<div class="info"><span class="label">Orders:</span><span class="value">${orderCount}</span></div>` : ''}
+    <div class="info"><b>Bill No:</b><b>${bill.billNumber}</b></div>
+    <div class="info"><b>Date:</b><b>${dateStr}</b></div>
+    <div class="info"><b>Time:</b><b>${timeStr}</b></div>
+    ${tableName ? `<div class="info"><b>Table:</b><b>${tableName}</b></div>` : ''}
+    ${guestName ? `<div class="info"><b>Guest:</b><b>${guestName}</b></div>` : ''}
+    ${numGuests ? `<div class="info"><b>Guests:</b><b>${numGuests}</b></div>` : ''}
+    ${orderCount ? `<div class="info"><b>Orders:</b><b>${orderCount}</b></div>` : ''}
     <hr>
     <table>
         <thead>
             <tr class="items-header">
-                <th style="text-align:left;">Item</th>
-                <th style="text-align:center;">Qty</th>
-                <th style="text-align:right;">Amt</th>
+                <th style="text-align:left;"><b>Item</b></th>
+                <th style="text-align:center;"><b>Qty</b></th>
+                <th style="text-align:right;"><b>Amt</b></th>
             </tr>
         </thead>
         <tbody>
@@ -147,15 +200,15 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
         </tbody>
     </table>
     <hr>
-    <div class="total-row"><span>Subtotal:</span><span>₹${bill.itemsTotal.toFixed(2)}</span></div>
-    ${bill.discountAmount && bill.discountAmount > 0 ? `<div class="total-row discount"><span>Discount:</span><span>-₹${bill.discountAmount.toFixed(2)}</span></div>` : ''}
+    <div class="total-row"><b>Subtotal:</b><b>₹${bill.itemsTotal.toFixed(2)}</b></div>
+    ${bill.discountAmount && bill.discountAmount > 0 ? `<div class="total-row"><b>Discount:</b><b>-₹${bill.discountAmount.toFixed(2)}</b></div>` : ''}
     <hr>
-    <div class="grand-total"><span>TOTAL:</span><span>₹${bill.finalTotal.toFixed(2)}</span></div>
-    ${bill.paymentMethod ? `<div class="total-row"><span>Payment:</span><span>${bill.paymentMethod.toUpperCase()}</span></div>` : ''}
+    <div class="grand-total"><b>TOTAL:</b><b>₹${bill.finalTotal.toFixed(2)}</b></div>
+    ${bill.paymentMethod ? `<div class="total-row"><b>Payment:</b><b>${bill.paymentMethod.toUpperCase()}</b></div>` : ''}
     <hr>
     <div class="footer">
-        <div class="thank-you">Thank You! Visit Again!</div>
-        <div style="margin-top:4px;">Powered by AI Cavalli</div>
+        <div class="thank-you"><b>Thank You! Visit Again!</b></div>
+        <div style="margin-top:4px;"><b>Powered by AI Cavalli</b></div>
     </div>
 </body>
 </html>`

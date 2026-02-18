@@ -83,15 +83,17 @@
     padding: 20px;
 }
 
-/* Thermal bill receipt styling */
+/* Thermal bill receipt styling — bold & high contrast for thermal printers */
 .receipt {
     background: white;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
-    color: #1a1a1a;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: #000000;
     padding: 20px 16px;
-    border: 2px dashed #ddd;
+    border: 2px solid #333;
     border-radius: 8px;
+    -webkit-text-stroke: 0.3px #000000;
 }
 
 .receiptHeader {
@@ -101,36 +103,43 @@
 
 .receiptHeader h3 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 900;
-    letter-spacing: 1px;
+    letter-spacing: 3px;
+    color: #000000;
 }
 
 .receiptHeader p {
-    margin: 2px 0 0;
-    font-size: 0.8rem;
-    color: #666;
+    margin: 4px 0 0;
+    font-size: 0.9rem;
+    color: #000000;
+    font-weight: 900;
+    letter-spacing: 2px;
 }
 
 .divider {
     border: none;
-    border-top: 1px dashed #999;
+    border-top: 3px solid #000000;
     margin: 10px 0;
 }
 
 .infoRow {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8rem;
-    margin-bottom: 4px;
+    font-size: 0.9rem;
+    font-weight: 900;
+    margin-bottom: 5px;
+    color: #000000;
 }
 
 .infoRow span:first-child {
-    color: #666;
+    color: #000000;
+    font-weight: 900;
 }
 
 .infoRow span:last-child {
-    font-weight: 600;
+    font-weight: 900;
+    color: #000000;
 }
 
 .itemsTable {
@@ -141,12 +150,13 @@
 .itemsHeader {
     display: flex;
     justify-content: space-between;
-    font-weight: 700;
-    font-size: 0.75rem;
+    font-weight: 900;
+    font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     padding-bottom: 6px;
-    color: #444;
+    color: #000000;
+    border-bottom: 2px solid #000000;
 }
 
 .itemsHeader span:first-child {
@@ -166,8 +176,10 @@
 .itemRow {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 4px;
-    font-size: 0.8rem;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #000000;
 }
 
 .itemRow span:first-child {
@@ -176,18 +188,21 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     padding-right: 8px;
+    font-weight: 900;
 }
 
 .itemRow span:nth-child(2) {
     width: 40px;
     text-align: center;
-    color: #666;
+    color: #000000;
+    font-weight: 900;
 }
 
 .itemRow span:last-child {
     width: 70px;
     text-align: right;
-    font-weight: 600;
+    font-weight: 900;
+    color: #000000;
 }
 
 .totalSection {
@@ -197,24 +212,29 @@
 .totalRow {
     display: flex;
     justify-content: space-between;
-    font-size: 0.85rem;
-    margin-bottom: 4px;
+    font-size: 0.95rem;
+    font-weight: 900;
+    margin-bottom: 5px;
+    color: #000000;
 }
 
 .totalRow.discount {
-    color: #10B981;
+    color: #000000;
 }
 
 .grandTotal {
     display: flex;
     justify-content: space-between;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     font-weight: 900;
     padding: 8px 0;
+    color: #000000;
+    border-top: 3px solid #000000;
+    border-bottom: 3px solid #000000;
 }
 
 .grandTotal span:last-child {
-    color: #C0272D;
+    color: #000000;
 }
 
 .receiptFooter {
@@ -224,14 +244,15 @@
 
 .receiptFooter p {
     margin: 2px 0;
-    font-size: 0.8rem;
-    color: #666;
+    font-size: 0.9rem;
+    color: #000000;
+    font-weight: 900;
 }
 
 .receiptFooter .thankYou {
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #1a1a1a;
+    font-weight: 900;
+    font-size: 1.05rem;
+    color: #000000;
 }
 
 /* Action buttons */
@@ -331,6 +352,10 @@
     .receipt {
         border: none;
         padding: 0;
-        font-size: 12px;
+        font-size: 15px;
+        font-weight: 900;
+        color: #000000 !important;
+        -webkit-text-stroke: 0.5px #000000;
+        text-shadow: 0 0 0 #000000;
     }
 }
