@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/context'
 import { BottomNav } from '@/components/layout/BottomNav'
+import { PopupProvider } from '@/components/ui/Popup'
 
 export default function CustomerLayout({
     children,
@@ -44,6 +45,7 @@ export default function CustomerLayout({
         <div style={{ paddingBottom: '80px' }}>
             {children}
             <BottomNav />
+            <PopupProvider />
         </div>
     )
 }

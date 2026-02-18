@@ -5,13 +5,14 @@ import { supabase } from '@/lib/database/supabase'
 import { useAuth } from '@/lib/auth/context'
 
 import { useSearchParams } from 'next/navigation'
-import { ChevronLeft, Package, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { ChevronLeft, Package, Clock, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/Loading'
 import { Utensils, Receipt } from 'lucide-react'
 import { useCart } from '@/lib/context/CartContext'
 import { BillPreviewModal, BillData } from '@/components/ui/BillPreviewModal'
+import { showError, showSuccess, showConfirm } from '@/components/ui/Popup'
 
 export default function OrdersPage() {
     const { user, logout } = useAuth()
@@ -24,6 +25,7 @@ export default function OrdersPage() {
     const [activeSession, setActiveSession] = useState<any>(null)
     const [endingSession, setEndingSession] = useState(false)
     const [billPreview, setBillPreview] = useState<BillData | null>(null)
+    const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
     useEffect(() => {
         // If neither user nor orderIdParam, we can't show anything
@@ -114,9 +116,11 @@ export default function OrdersPage() {
     const handleGetBill = async () => {
         // CASE 1: No orders placed at all
         if (orders.length === 0) {
-            const confirmed = confirm(
-                "Leaving Ai Cavalli?\n\n" +
-                "You haven't placed any orders yet. Would you like to end your visit and sign out?"
+            const confirmed = await showConfirm(
+                "Leaving Ai Cavalli?",
+                "You haven't placed any orders yet. Would you like to end your visit and sign out?",
+                "Sign Out",
+                "Stay"
             )
             if (confirmed) {
                 clearCart()
@@ -126,9 +130,11 @@ export default function OrdersPage() {
         }
 
         // CASE 2: Has orders — confirm bill generation
-        const confirmed = confirm(
-            "Request your bill?\n\n" +
-            "This will generate your bill. You can print or save it as PDF."
+        const confirmed = await showConfirm(
+            "Request Your Bill?",
+            "This will generate your bill. You can print or save it as PDF.",
+            "Get Bill",
+            "Not Yet"
         )
 
         if (!confirmed) return
@@ -175,11 +181,11 @@ export default function OrdersPage() {
                     sessionDetails: data.bill.sessionDetails
                 })
             } else {
-                alert(`Failed to generate bill: ${data.error || 'Unknown error'}`)
+                showError("Bill Generation Failed", data.error || 'Unknown error')
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to generate bill. Please ask a waiter directly.")
+            showError("Something Went Wrong", "Failed to generate bill. Please ask a waiter directly.")
         } finally {
             setEndingSession(false)
         }
@@ -278,107 +284,130 @@ export default function OrdersPage() {
             )}
 
             {orders.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                     {orders.map(order => {
                         const statusConfig: any = {
                             pending: { icon: Clock, color: '#F59E0B', label: 'Preparing', bg: 'rgba(245, 158, 11, 0.1)' },
-                            ready: { icon: CheckCircle2, color: 'var(--primary)', label: 'Ready for Pickup', bg: 'rgba(var(--primary-rgb), 0.1)' },
-                            completed: { icon: CheckCircle2, color: '#10B981', label: 'Completed', bg: 'rgba(16, 185, 129, 0.1)' },
+                            ready: { icon: CheckCircle2, color: 'var(--primary)', label: 'Ready', bg: 'rgba(var(--primary-rgb), 0.1)' },
+                            completed: { icon: CheckCircle2, color: '#10B981', label: 'Done', bg: 'rgba(16, 185, 129, 0.1)' },
                             cancelled: { icon: XCircle, color: '#EF4444', label: 'Cancelled', bg: 'rgba(239, 68, 68, 0.1)' }
                         }
                         const config = statusConfig[order.status] || statusConfig.pending
                         const StatusIcon = config.icon
+                        const isExpanded = expandedOrder === order.id
+                        const itemCount = order.items?.length || 0
+                        const firstItem = order.notes === 'REGULAR_STAFF_MEAL' ? 'Staff Meal' : order.items?.[0]?.menu_item?.name || 'Order'
+                        const summary = itemCount > 1 ? `${firstItem} +${itemCount - 1} more` : firstItem
 
                         return (
-                            <div key={order.id} className="hover-lift" style={{
-                                background: 'var(--surface)',
-                                borderRadius: 'var(--radius-lg)',
-                                border: '1px solid var(--border)',
-                                boxShadow: 'var(--shadow-md)',
-                                overflow: 'hidden'
-                            }}>
+                            <div
+                                key={order.id}
+                                style={{
+                                    background: 'var(--surface)',
+                                    borderRadius: 'var(--radius)',
+                                    border: '1px solid var(--border)',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
+                            >
+                                {/* Compact header row */}
                                 <div style={{
-                                    background: config.bg,
-                                    padding: 'var(--space-4) var(--space-6)',
+                                    padding: '14px 16px',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    borderBottom: '1px solid var(--border)'
+                                    gap: '12px'
                                 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                        <StatusIcon size={24} color={config.color} />
-                                        <span style={{ fontWeight: 800, color: config.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                            {config.label}
-                                        </span>
+                                    <StatusIcon size={20} color={config.color} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                            <span style={{
+                                                fontWeight: 700,
+                                                fontSize: '0.9rem',
+                                                color: 'var(--text)',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                                maxWidth: '60%'
+                                            }}>
+                                                {summary}
+                                            </span>
+                                            <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1rem', flexShrink: 0 }}>
+                                                ₹{order.total.toFixed(0)}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            <span style={{
+                                                fontWeight: 700,
+                                                color: config.color,
+                                                background: config.bg,
+                                                padding: '1px 8px',
+                                                borderRadius: '4px',
+                                                fontSize: '0.7rem',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.03em'
+                                            }}>
+                                                {config.label}
+                                            </span>
+                                            <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                            <span>•</span>
+                                            <span>{order.table_name}</span>
+                                        </div>
                                     </div>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 600, opacity: 0.7 }}>
-                                        #{order.id.slice(0, 8).toUpperCase()}
-                                    </span>
+                                    <ChevronDown
+                                        size={18}
+                                        color="var(--text-muted)"
+                                        style={{
+                                            transition: 'transform 0.2s',
+                                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                            flexShrink: 0
+                                        }}
+                                    />
                                 </div>
 
-                                <div style={{ padding: 'var(--space-6)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-                                        <div>
-                                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Placed At</p>
-                                            <p style={{ margin: 0, fontWeight: 700 }}>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                        </div>
-                                        <div style={{ textAlign: 'center' }}>
-                                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Guests</p>
-                                            <p style={{ margin: 0, fontWeight: 700 }}>{order.num_guests || 1}</p>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-muted)' }}>Location</p>
-                                            <p style={{ margin: 0, fontWeight: 700 }}>{order.table_name}</p>
-                                        </div>
-                                    </div>
-
+                                {/* Expanded details */}
+                                {isExpanded && (
                                     <div style={{
-                                        padding: 'var(--space-4)',
-                                        background: 'var(--background)',
-                                        borderRadius: 'var(--radius)',
-                                        border: '1px solid var(--border)',
-                                        marginBottom: 'var(--space-4)'
+                                        padding: '0 16px 14px',
+                                        borderTop: '1px solid var(--border)'
                                     }}>
-                                        <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 'var(--space-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Summary</p>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                                            {order.notes === 'REGULAR_STAFF_MEAL' ? (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', fontWeight: 600 }}>
-                                                    <Utensils size={16} />
-                                                    <span>Standard Regular Staff Meal</span>
-                                                </div>
-                                            ) : (
-                                                order.items?.map((item: any) => (
-                                                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 600 }}>
-                                                        <span style={{ color: 'var(--text)' }}>{item.quantity}x {item.menu_item?.name}</span>
-                                                        <span style={{ color: 'var(--text-muted)' }}>₹{(item.quantity * item.price).toFixed(2)}</span>
+                                        <div style={{ padding: '12px 0' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                <span>#{order.id.slice(0, 8).toUpperCase()}</span>
+                                                <span>{order.num_guests || 1} Guest{(order.num_guests || 1) > 1 ? 's' : ''}</span>
+                                            </div>
+                                            <div style={{
+                                                background: 'var(--background)',
+                                                borderRadius: 'var(--radius-sm)',
+                                                padding: '10px 12px',
+                                                border: '1px solid var(--border)'
+                                            }}>
+                                                {order.notes === 'REGULAR_STAFF_MEAL' ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem' }}>
+                                                        <Utensils size={14} />
+                                                        <span>Standard Regular Staff Meal</span>
                                                     </div>
-                                                ))
+                                                ) : (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                        {order.items?.map((item: any) => (
+                                                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 600 }}>
+                                                                <span>{item.quantity}x {item.menu_item?.name}</span>
+                                                                <span style={{ color: 'var(--text-muted)' }}>₹{(item.quantity * item.price).toFixed(0)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {order.notes && order.notes !== 'REGULAR_STAFF_MEAL' && (
+                                                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                                    Note: {order.notes}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
-
-                                    <div style={{
-                                        padding: 'var(--space-4)',
-                                        background: 'rgba(var(--primary-rgb), 0.05)',
-                                        borderRadius: 'var(--radius)',
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
-                                        alignItems: 'center'
-                                    }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                            <Package size={20} color="var(--primary)" />
-                                            <span style={{ fontWeight: 700 }}>Total Amount</span>
-                                        </div>
-                                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>₹{order.total.toFixed(2)}</span>
-                                    </div>
-
-                                    {order.notes && (
-                                        <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3)', background: 'white', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem' }}>
-                                            <span style={{ fontWeight: 700, marginRight: '8px' }}>Notes:</span>
-                                            <span style={{ color: 'var(--text-muted)' }}>{order.notes}</span>
-                                        </div>
-                                    )}
-                                </div>
+                                )}
                             </div>
                         )
                     })}

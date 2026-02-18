@@ -1,0 +1,148 @@
+.popupOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: popupFadeIn 0.15s ease;
+}
+
+@keyframes popupFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes popupSlideIn {
+    from { transform: scale(0.92) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.popupBox {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+    animation: popupSlideIn 0.2s ease;
+    overflow: hidden;
+}
+
+/* Icon */
+.iconWrap {
+    display: flex;
+    justify-content: center;
+    padding: 24px 24px 0;
+}
+
+.iconCircle {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.iconCircle.success {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10B981;
+}
+
+.iconCircle.error {
+    background: rgba(239, 68, 68, 0.12);
+    color: #EF4444;
+}
+
+.iconCircle.warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #F59E0B;
+}
+
+.iconCircle.info {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3B82F6;
+}
+
+.iconCircle.confirm {
+    background: rgba(139, 92, 246, 0.12);
+    color: #8B5CF6;
+}
+
+/* Content */
+.popupContent {
+    padding: 16px 24px 8px;
+    text-align: center;
+}
+
+.popupTitle {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #1a1a1a;
+}
+
+.popupMessage {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* Buttons */
+.popupActions {
+    padding: 16px 24px 24px;
+    display: flex;
+    gap: 10px;
+}
+
+.popupActions.single {
+    justify-content: center;
+}
+
+.popupBtn {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 14px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.popupBtn:active {
+    transform: scale(0.97);
+}
+
+.btnPrimary {
+    background: #C0272D;
+    color: white;
+}
+
+.btnPrimary:hover {
+    background: #a02025;
+}
+
+.btnPrimary.success {
+    background: #10B981;
+}
+
+.btnPrimary.success:hover {
+    background: #059669;
+}
+
+.btnSecondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.btnSecondary:hover {
+    background: #e5e7eb;
+}

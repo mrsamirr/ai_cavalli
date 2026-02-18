@@ -8,6 +8,7 @@ import { ChevronLeft, User, Package, LogOut, MessageSquare, ShieldCheck, Utensil
 import Link from 'next/link'
 import { Loading } from '@/components/ui/Loading'
 import { useCart } from '@/lib/context/CartContext'
+import { showError, showSuccess, showConfirm } from '@/components/ui/Popup'
 
 export default function ProfilePage() {
     const { logout, user } = useAuth()
@@ -107,9 +108,11 @@ export default function ProfilePage() {
     const handleGetBill = async () => {
         // CASE 1: No orders placed
         if (orders.length === 0) {
-            const confirmed = confirm(
-                "Leaving Ai Cavalli?\n\n" +
-                "You haven't placed any orders yet. Would you like to end your visit and sign out?"
+            const confirmed = await showConfirm(
+                'Leaving Ai Cavalli?',
+                "You haven't placed any orders yet. Would you like to end your visit and sign out?",
+                'Sign Out',
+                'Stay'
             )
             if (confirmed) {
                 clearCart()
@@ -119,9 +122,11 @@ export default function ProfilePage() {
         }
 
         // CASE 2: Has orders — request bill
-        const confirmed = confirm(
-            "Request your bill?\n\n" +
-            "A waiter will bring the bill to your table."
+        const confirmed = await showConfirm(
+            'Request Your Bill?',
+            'A waiter will bring the bill to your table.',
+            'Get Bill',
+            'Not Yet'
         )
 
         if (!confirmed) return
@@ -140,9 +145,9 @@ export default function ProfilePage() {
                 })
                 const data = await response.json()
                 if (data.success) {
-                    alert(data.message || "Bill request sent! A waiter will bring your bill shortly.")
+                    showSuccess('Bill Requested', data.message || 'A waiter will bring your bill shortly.')
                 } else {
-                    alert(`Failed to request bill: ${data.error}`)
+                    showError('Request Failed', data.error || 'Unknown error')
                 }
             } else {
                 // STUDENT/STAFF: generate bill directly
@@ -156,14 +161,14 @@ export default function ProfilePage() {
                 })
                 const data = await response.json()
                 if (data.success) {
-                    alert("Bill generated successfully!")
+                    showSuccess('Bill Generated', 'Your bill has been created successfully.')
                 } else {
-                    alert(`Failed to generate bill: ${data.error}`)
+                    showError('Bill Failed', data.error || 'Unknown error')
                 }
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to request bill. Please ask a waiter directly.")
+            showError('Something Went Wrong', 'Failed to request bill. Please ask a waiter directly.')
         } finally {
             setEndingSession(false)
         }

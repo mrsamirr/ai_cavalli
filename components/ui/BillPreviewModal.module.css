@@ -8,9 +8,11 @@
     backdrop-filter: blur(4px);
     z-index: 9999;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 16px;
+    padding-top: max(16px, 5vh);
+    overflow-y: auto;
     animation: fadeIn 0.2s ease;
 }
 
@@ -29,12 +31,13 @@
     border-radius: 16px;
     width: 100%;
     max-width: 420px;
-    max-height: 90vh;
+    max-height: 85vh;
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: slideUp 0.3s ease;
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 .header {

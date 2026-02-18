@@ -3,6 +3,7 @@
 import { useRef, useCallback } from 'react'
 import { X, Printer, Download, Receipt } from 'lucide-react'
 import styles from './BillPreviewModal.module.css'
+import { showError, showSuccess, showConfirm } from '@/components/ui/Popup'
 
 export interface BillItem {
     item_name: string
@@ -164,7 +165,7 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
     const handlePrint = useCallback(() => {
         const printWindow = window.open('', '_blank', 'width=350,height=700')
         if (!printWindow) {
-            alert('Please allow popups to print the bill')
+            showError('Popup Blocked', 'Please allow popups to print the bill.')
             return
         }
 
@@ -193,7 +194,7 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
     const handleSavePDF = useCallback(() => {
         const printWindow = window.open('', '_blank', 'width=350,height=700')
         if (!printWindow) {
-            alert('Please allow popups to save the bill as PDF')
+            showError('Popup Blocked', 'Please allow popups to save the bill as PDF.')
             return
         }
 
@@ -259,17 +260,18 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
 
             const data = await response.json()
             if (data.success) {
-                alert('Bill sent to thermal printer!')
+                showSuccess('Printed!', 'Bill sent to thermal printer.')
                 onPrintComplete?.()
             } else {
                 throw new Error(data.error || 'Printer error')
             }
         } catch (error: any) {
             // Fallback to browser print if printer server isn't running
-            const useBrowserPrint = confirm(
-                'Thermal printer not available.\n\n' +
-                `${error.message || 'Could not connect to printer server.'}\n\n` +
-                'Would you like to use browser print instead?'
+            const useBrowserPrint = await showConfirm(
+                'Printer Unavailable',
+                `${error.message || 'Could not connect to printer server.'} Use browser print instead?`,
+                'Browser Print',
+                'Cancel'
             )
             if (useBrowserPrint) {
                 handlePrint()

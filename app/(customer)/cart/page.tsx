@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Trash2, ChevronLeft, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 import { Loading } from '@/components/ui/Loading'
+import { showError } from '@/components/ui/Popup'
 
 export default function CartPage() {
     const { items, removeFromCart, updateQuantity, total, clearCart } = useCart()
@@ -112,7 +113,7 @@ export default function CartPage() {
             router.push('/orders')
         } catch (err: any) {
             console.error('Order placement error:', err)
-            alert(`Failed to place order: ${err.message || "Unknown error"}`)
+            showError('Order Failed', err.message || 'Unknown error. Please try again.')
         } finally {
             setLoading(false)
         }
