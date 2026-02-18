@@ -18,31 +18,31 @@ export default function CartPage() {
 
     const [loading, setLoading] = useState(false)
 
-    const [tableName, setTableName] = useState('')
-    const [numGuests, setNumGuests] = useState('1')
     const [locationType, setLocationType] = useState<'indoor' | 'outdoor'>('indoor')
     const [notes, setNotes] = useState('')
 
-    // Auto-fill table and guests from guest session (set during signup)
-    useEffect(() => {
+    // Resolve table name and guests from session/user data
+    const getTableInfo = () => {
+        // OUTSIDER: get from guest_session
         if (user?.role === 'OUTSIDER') {
             const storedSession = localStorage.getItem('guest_session')
             if (storedSession) {
                 try {
                     const session = JSON.parse(storedSession)
-                    if (session.table_name) setTableName(session.table_name)
-                    if (session.num_guests) setNumGuests(String(session.num_guests))
-                } catch (e) {
-                    console.error('Failed to parse guest session:', e)
-                }
+                    return {
+                        tableName: session.table_name || 'Guest',
+                        numGuests: parseInt(session.num_guests) || 1
+                    }
+                } catch { /* fallthrough */ }
             }
+            return { tableName: 'Guest', numGuests: 1 }
         }
-    }, [user])
-
+        // STUDENT/STAFF/KITCHEN: use name as identifier
+        return { tableName: user?.name || user?.role || 'Staff', numGuests: 1 }
+    }
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!tableName) return
 
         setLoading(true)
 
@@ -52,45 +52,47 @@ export default function CartPage() {
             const isStaffUser = user?.role === 'STAFF'
             const finalNotes = hasRegularMeal && isStaffUser ? 'REGULAR_STAFF_MEAL' : notes
 
-            // 1. Manage Guest Session if applicable
+            // Resolve table info automatically
+            const { tableName, numGuests } = getTableInfo()
+
+            // Get guest session ID if applicable
             let sessionId = null
-
-            // Get session token for secure API calls
-            // Use custom session token from localStorage (PIN-based auth system)
-            const token = localStorage.getItem('session_token')
-
             if (user?.role === 'OUTSIDER') {
-                // Get session from localStorage (set during guest login) or fetch from API
                 const storedSession = localStorage.getItem('guest_session')
                 if (storedSession) {
-                    const parsedSession = JSON.parse(storedSession)
-                    sessionId = parsedSession.id
-                } else {
-                    // Fallback: fetch active session by user ID
-                    const sessionResp = await fetch(`/api/sessions/active?userId=${user.id}`)
-                    const sessionData = await sessionResp.json()
-                    if (sessionData.success && sessionData.session) {
-                        sessionId = sessionData.session.id
-                        localStorage.setItem('guest_session', JSON.stringify(sessionData.session))
-                    } else {
-                        throw new Error('No active dining session found. Please sign in again.')
-                    }
+                    try {
+                        sessionId = JSON.parse(storedSession).id
+                    } catch { /* ignore */ }
+                }
+                if (!sessionId) {
+                    // Fallback: fetch active session
+                    try {
+                        const sessionResp = await fetch(`/api/sessions/active?userId=${user.id}`)
+                        const sessionData = await sessionResp.json()
+                        if (sessionData.success && sessionData.session) {
+                            sessionId = sessionData.session.id
+                            localStorage.setItem('guest_session', JSON.stringify(sessionData.session))
+                        }
+                    } catch { /* continue without sessionId */ }
                 }
             }
 
-            // 2. Call Secure Order API
+            // Get auth token
+            const token = localStorage.getItem('session_token')
+
+            // Call Order API
             const orderResponse = await fetch('/api/orders/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify({
                     userId: user?.id,
                     phone: user?.phone,
                     items: items.filter(item => item.itemId !== 'REGULAR_MEAL_VIRTUAL'),
                     tableName,
-                    numGuests: parseInt(numGuests) || 1,
+                    numGuests,
                     locationType,
                     notes: finalNotes,
                     sessionId
@@ -304,26 +306,6 @@ export default function CartPage() {
                                     Outdoor
                                 </label>
                             </div>
-
-                            <Input
-                                label="Table / Room Number"
-                                placeholder="e.g. 5"
-                                type="number"
-                                pattern="[0-9]*"
-                                inputMode="numeric"
-                                required
-                                value={tableName}
-                                onChange={e => setTableName(e.target.value)}
-                            />
-
-                            <Input
-                                label="Number of Guests"
-                                type="number"
-                                min="1"
-                                required
-                                value={numGuests}
-                                onChange={e => setNumGuests(e.target.value)}
-                            />
 
                             <Input
                                 label="Special Notes"

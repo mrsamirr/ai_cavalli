@@ -52,14 +52,30 @@ export default function ProfilePage() {
         }
 
         async function fetchActiveSession() {
-            if (user?.role === 'OUTSIDER') {
-                try {
-                    // Use phone for session lookup (or userId as fallback)
+            try {
+                if (user?.role === 'OUTSIDER') {
+                    // OUTSIDER: look up guest_session by phone or userId
+                    const params = new URLSearchParams()
                     const phone = userDetails?.phone || user?.phone
-                    const response = await fetch(`/api/sessions/active?phone=${phone}&userId=${user.id}`)
+                    if (phone) params.set('phone', phone)
+                    params.set('userId', user.id)
+
+                    const response = await fetch(`/api/sessions/active?${params.toString()}`)
                     const data = await response.json()
-                    if (data.success) setActiveSession(data.session)
-                } catch (e) { console.error(e) }
+                    if (data.success && data.session) {
+                        setActiveSession(data.session)
+                        return
+                    }
+                }
+                // For ALL roles: set virtual session so bill button works
+                if (user) {
+                    setActiveSession({ _virtual: true, userId: user.id })
+                }
+            } catch (e) {
+                console.error('fetchActiveSession error:', e)
+                if (user) {
+                    setActiveSession({ _virtual: true, userId: user.id })
+                }
             }
         }
 
@@ -89,8 +105,8 @@ export default function ProfilePage() {
     }, [user])
 
     const handleGetBill = async () => {
-        // CASE 1: No active session AND no orders placed
-        if (!activeSession && orders.length === 0) {
+        // CASE 1: No orders placed
+        if (orders.length === 0) {
             const confirmed = confirm(
                 "Leaving Ai Cavalli?\n\n" +
                 "You haven't placed any orders yet. Would you like to end your visit and sign out?"
@@ -102,42 +118,48 @@ export default function ProfilePage() {
             return
         }
 
-        // CASE 2: No orders to bill
-        if (orders.length === 0) {
-            alert("You haven't placed any orders yet. Please place an order first.")
-            return
-        }
-
-        // CASE 3: No active session but has orders
-        if (!activeSession) {
-            alert("No active session found. Your session may have already ended.")
-            return
-        }
-
-        // CASE 4: Active session exists with orders
+        // CASE 2: Has orders — request bill
         const confirmed = confirm(
             "Request your bill?\n\n" +
-            "A waiter will bring the bill to your table. You can still add more orders if you change your mind."
+            "A waiter will bring the bill to your table."
         )
 
         if (!confirmed) return
 
         setEndingSession(true)
         try {
-            const response = await fetch('/api/bills/request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sessionId: activeSession.id,
-                    userId: user?.id
+            // OUTSIDER with real session: use session-based request
+            if (activeSession && !activeSession._virtual && activeSession.id) {
+                const response = await fetch('/api/bills/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: activeSession.id,
+                        userId: user?.id
+                    })
                 })
-            })
-
-            const data = await response.json()
-            if (data.success) {
-                alert(data.message || "Bill request sent! A waiter will bring your bill shortly.")
+                const data = await response.json()
+                if (data.success) {
+                    alert(data.message || "Bill request sent! A waiter will bring your bill shortly.")
+                } else {
+                    alert(`Failed to request bill: ${data.error}`)
+                }
             } else {
-                alert(`Failed to request bill: ${data.error}`)
+                // STUDENT/STAFF: generate bill directly
+                const response = await fetch('/api/bills/user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user?.id,
+                        paymentMethod: 'cash'
+                    })
+                })
+                const data = await response.json()
+                if (data.success) {
+                    alert("Bill generated successfully!")
+                } else {
+                    alert(`Failed to generate bill: ${data.error}`)
+                }
             }
         } catch (error) {
             console.error(error)
@@ -218,17 +240,16 @@ export default function ProfilePage() {
                         </div>
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-                            {role === 'OUTSIDER' && (
-                                <div style={{
-                                    flex: '1 1 100%',
-                                    background: 'rgba(16, 185, 129, 0.05)',
-                                    padding: 'var(--space-4)',
-                                    borderRadius: 'var(--radius)',
-                                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                                    marginBottom: 'var(--space-2)'
-                                }}>
+                            <div style={{
+                                flex: '1 1 100%',
+                                background: 'rgba(16, 185, 129, 0.05)',
+                                padding: 'var(--space-4)',
+                                borderRadius: 'var(--radius)',
+                                border: '1px solid rgba(16, 185, 129, 0.2)',
+                                marginBottom: 'var(--space-2)'
+                            }}>
                                     {/* Order Summary */}
-                                    {activeSession && (
+                                    {activeSession && !activeSession._virtual && (
                                         <div style={{
                                             background: 'var(--background)',
                                             padding: 'var(--space-4)',
@@ -257,6 +278,26 @@ export default function ProfilePage() {
                                                         ₹{(activeSession.total_amount || orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0)).toFixed(2)}
                                                     </span>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Simple order summary for STUDENT/STAFF */}
+                                    {activeSession?._virtual && orders.length > 0 && (
+                                        <div style={{
+                                            background: 'var(--background)',
+                                            padding: 'var(--space-4)',
+                                            borderRadius: 'var(--radius-sm)',
+                                            marginBottom: 'var(--space-4)',
+                                            border: '1px solid var(--border)'
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>{orders.length} ORDER{orders.length !== 1 ? 'S' : ''}</span>
+                                                </div>
+                                                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>
+                                                    ₹{orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0).toFixed(2)}
+                                                </span>
                                             </div>
                                         </div>
                                     )}
@@ -314,7 +355,6 @@ export default function ProfilePage() {
                                         </p>
                                     )}
                                 </div>
-                            )}
                             <Button
                                 onClick={() => window.open('https://wa.me/1234567890', '_blank')}
                                 variant="outline"

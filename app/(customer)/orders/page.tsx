@@ -54,19 +54,32 @@ export default function OrdersPage() {
         }
 
         async function fetchActiveSession() {
-            if (user?.role === 'OUTSIDER') {
-                try {
-                    const { data: { session } } = await supabase.auth.getSession()
-                    const token = session?.access_token
+            try {
+                if (user?.role === 'OUTSIDER') {
+                    // OUTSIDER: look up guest_session by phone or userId
+                    const params = new URLSearchParams()
+                    if (user.phone) params.set('phone', user.phone)
+                    params.set('userId', user.id)
 
-                    const response = await fetch(`/api/sessions/active?phone=${user.phone}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    })
+                    const response = await fetch(`/api/sessions/active?${params.toString()}`)
                     const data = await response.json()
-                    if (data.success) setActiveSession(data.session)
-                } catch (e) { console.error(e) }
+                    if (data.success && data.session) {
+                        setActiveSession(data.session)
+                        return
+                    }
+                }
+                // For ALL roles (including OUTSIDER fallback): build a virtual session from orders
+                // This ensures STUDENT/STAFF can also use "Get the Bill"
+                // We'll set a marker so handleGetBill knows to use the user-based flow
+                if (user) {
+                    setActiveSession({ _virtual: true, userId: user.id })
+                }
+            } catch (e) {
+                console.error('fetchActiveSession error:', e)
+                // Still set virtual session so the bill button works
+                if (user) {
+                    setActiveSession({ _virtual: true, userId: user.id })
+                }
             }
         }
 
@@ -99,8 +112,8 @@ export default function OrdersPage() {
     }, [user, orderIdParam])
 
     const handleGetBill = async () => {
-        // CASE 1: No active session AND no orders placed
-        if (!activeSession && orders.length === 0) {
+        // CASE 1: No orders placed at all
+        if (orders.length === 0) {
             const confirmed = confirm(
                 "Leaving Ai Cavalli?\n\n" +
                 "You haven't placed any orders yet. Would you like to end your visit and sign out?"
@@ -112,39 +125,42 @@ export default function OrdersPage() {
             return
         }
 
-        // CASE 2: No orders to bill
-        if (orders.length === 0) {
-            alert("You haven't placed any orders yet. Please place an order first.")
-            return
-        }
-
-        // CASE 3: No active session but has orders (session may have already ended)
-        if (!activeSession) {
-            alert("No active session found. Your session may have already ended.")
-            return
-        }
-
-        // CASE 4: Active session exists with orders
+        // CASE 2: Has orders — confirm bill generation
         const confirmed = confirm(
             "Request your bill?\n\n" +
-            "This will generate your bill and end your session. You can print or save it as PDF."
+            "This will generate your bill. You can print or save it as PDF."
         )
 
         if (!confirmed) return
 
         setEndingSession(true)
         try {
-            // Generate a consolidated session bill
-            const response = await fetch('/api/bills/session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    sessionId: activeSession.id,
-                    paymentMethod: 'cash'
-                })
-            })
+            let data: any
 
-            const data = await response.json()
+            // Use session-based flow for OUTSIDER with a real guest_session
+            if (activeSession && !activeSession._virtual && activeSession.id) {
+                const response = await fetch('/api/bills/session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionId: activeSession.id,
+                        paymentMethod: 'cash'
+                    })
+                })
+                data = await response.json()
+            } else {
+                // User-based flow for STUDENT/STAFF or OUTSIDER without session
+                const response = await fetch('/api/bills/user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user?.id,
+                        paymentMethod: 'cash'
+                    })
+                })
+                data = await response.json()
+            }
+
             if (data.success && data.bill) {
                 // Show the bill preview modal
                 setBillPreview({
@@ -202,15 +218,15 @@ export default function OrdersPage() {
                 </h1>
             </div>
 
-            {user?.role === 'OUTSIDER' && (
+            {user && (
                 <div style={{
                     marginBottom: 'var(--space-6)',
-                    background: activeSession ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.9)',
+                    background: orders.length > 0 ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'rgba(255, 255, 255, 0.9)',
                     borderRadius: 'var(--radius-lg)',
                     padding: 'var(--space-5)',
-                    color: activeSession ? 'white' : 'var(--text)',
+                    color: orders.length > 0 ? 'white' : 'var(--text)',
                     boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                    border: activeSession ? 'none' : '2px dashed #10B981',
+                    border: orders.length > 0 ? 'none' : '2px dashed #10B981',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 'var(--space-4)'
@@ -218,44 +234,44 @@ export default function OrdersPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
-                                {activeSession ? 'Finalize Your Meal' : 'Ready for the Bill?'}
+                                {orders.length > 0 ? 'Finalize Your Meal' : 'Ready for the Bill?'}
                             </h3>
-                            {activeSession ? (
+                            {orders.length > 0 ? (
                                 <p style={{ margin: 0, opacity: 0.9, fontSize: '0.875rem' }}>
-                                    ₹{activeSession.total_amount?.toFixed(2) || '0.00'} • {activeSession.orderCount} Orders
+                                    {orders.length} Order{orders.length !== 1 ? 's' : ''} placed
                                 </p>
                             ) : (
                                 <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                                    End your session and get the bill on WhatsApp
+                                    Place an order first, then get your bill here
                                 </p>
                             )}
                         </div>
-                        <Receipt size={32} color={activeSession ? 'white' : '#10B981'} />
+                        <Receipt size={32} color={orders.length > 0 ? 'white' : '#10B981'} />
                     </div>
                     <Button
                         onClick={handleGetBill}
                         disabled={endingSession}
                         style={{
-                            background: activeSession ? 'white' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                            color: activeSession ? '#059669' : 'white',
+                            background: orders.length > 0 ? 'white' : 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                            color: orders.length > 0 ? '#059669' : 'white',
                             fontWeight: 900,
                             height: '56px',
                             border: 'none',
                             fontSize: '1.125rem',
-                            boxShadow: activeSession ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
+                            boxShadow: orders.length > 0 ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.3)'
                         }}
                     >
-                        {endingSession ? 'Processing...' : (activeSession ? 'GET THE BILL & END SESSION' : 'GET THE BILL')}
+                        {endingSession ? 'Processing...' : 'GET THE BILL'}
                     </Button>
                     <p style={{
                         margin: 0,
                         fontSize: '0.75rem',
                         textAlign: 'center',
-                        opacity: activeSession ? 0.9 : 0.7,
+                        opacity: orders.length > 0 ? 0.9 : 0.7,
                         fontStyle: 'italic'
                     }}>
-                        {activeSession
-                            ? "Clicking will end your session and send the bill + UPI code to your WhatsApp."
+                        {orders.length > 0
+                            ? "Generate your bill and print or save as PDF."
                             : "Note: You must have placed at least one order to generate a bill."}
                     </p>
                 </div>
