@@ -165,6 +165,14 @@ export async function POST(request: NextRequest) {
         } else if (action === 'delete') {
             const { id } = userData
 
+            // Remove related records that reference the user (foreign key constraints)
+            await supabase.from('order_items').delete().in(
+                'order_id',
+                (await supabase.from('orders').select('id').eq('user_id', id)).data?.map((o: any) => o.id) || []
+            )
+            await supabase.from('orders').delete().eq('user_id', id)
+            await supabase.from('guest_sessions').delete().eq('user_id', id)
+
             const { error: dbError } = await supabase.from('users').delete().eq('id', id)
             if (dbError) throw dbError
 

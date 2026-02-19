@@ -6,7 +6,7 @@ import { sanitizePhone } from "@/lib/utils/phone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/ui/Loading";
-import { showError, showConfirm } from "@/components/ui/Popup";
+import { showError, showSuccess, showConfirm } from "@/components/ui/Popup";
 import {
   Users,
   Search,
@@ -181,6 +181,7 @@ export default function UserControlPage() {
       setIsAddModalOpen(false);
       resetForm();
       fetchUsers();
+      showSuccess("User Created", "The new user has been added successfully.");
     } catch (err: any) {
       showError("Error Adding User", err.message);
     } finally {
@@ -237,6 +238,7 @@ export default function UserControlPage() {
 
       setIsEditModalOpen(false);
       fetchUsers();
+      showSuccess("User Updated", "Changes have been saved successfully.");
     } catch (err: any) {
       showError("Error Updating User", err.message);
     } finally {
@@ -267,6 +269,7 @@ export default function UserControlPage() {
       const data = await response.json();
       if (!data.success) throw new Error(data.error);
       fetchUsers();
+      showSuccess("User Deleted", "The user has been permanently removed.");
     } catch (err: any) {
       showError("Error Deleting User", err.message);
     }
