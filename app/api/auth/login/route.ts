@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
             const user = await getUserByPhone(sanitizedPhone)
             if (!user) {
                 await recordFailedLogin(sanitizedPhone, 'User not found')
-                console.error('LOGIN DEBUG: No user found for phone:', sanitizedPhone)
+                // console.error('LOGIN DEBUG: No user found for phone:', sanitizedPhone)
                 return NextResponse.json({ success: false, error: 'Invalid phone or PIN' }, { status: 401 })
             }
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
                 : rawRole === 'GUEST' ? 'OUTSIDER'
                 : rawRole
             
-            console.log('LOGIN DEBUG: Found user:', { id: user.id, phone: user.phone, role: user.role, rawRole, userRole, hasPin: !!user.pin, hasPinHash: !!user.pin_hash })
+            // console.log('LOGIN DEBUG: Found user:', { id: user.id, phone: user.phone, role: user.role, rawRole, userRole, hasPin: !!user.pin, hasPinHash: !!user.pin_hash })
 
             // Only STUDENT/STAFF/KITCHEN/ADMIN can use PIN login
             if (!['STUDENT', 'STAFF', 'KITCHEN', 'ADMIN'].includes(userRole)) {
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
 
             // Verify PIN (supports bcrypt hash, pgcrypto hash, and plaintext fallback)
             const pinValid = await verifyPin(pin, user)
-            console.log('LOGIN DEBUG: PIN verification result:', pinValid, 'inputPin:', pin, 'storedPin:', user.pin?.substring(0, 2) + '***', 'storedPinHash:', user.pin_hash?.substring(0, 10))
+            // console.log('LOGIN DEBUG: PIN verification result:', pinValid, 'inputPin:', pin, 'storedPin:', user.pin?.substring(0, 2) + '***', 'storedPinHash:', user.pin_hash?.substring(0, 10))
             if (!pinValid) {
                 await recordFailedLogin(sanitizedPhone, 'Invalid PIN')
                 return NextResponse.json({ success: false, error: 'Invalid phone or PIN' }, { status: 401 })
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
                     .single()
 
                 if (createError || !newUser) {
-                    console.error('Guest creation failed:', createError)
+                    // console.error('Guest creation failed:', createError)
                     return NextResponse.json({ success: false, error: 'Registration failed. Try again.' }, { status: 500 })
                 }
                 guestUser = newUser
@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
                     session = newSession
                 }
             } catch (e) {
-                console.error('Guest session error (non-fatal):', e)
+                // console.error('Guest session error (non-fatal):', e)
             }
 
             // Generate session token
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: false, error: 'Invalid login_type' }, { status: 400 })
     } catch (error) {
-        console.error('Login error:', error)
+        // console.error('Login error:', error)
         return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 })
     }
 }

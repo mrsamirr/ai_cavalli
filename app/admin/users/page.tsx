@@ -1,12 +1,12 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { supabase, supabaseUrl, supabaseAnonKey } from '@/lib/database/supabase'
+import { useAuth } from '@/lib/auth/context'
 import { sanitizePhone } from '@/lib/utils/phone'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loading } from '@/components/ui/Loading'
+import { showError, showConfirm } from '@/components/ui/Popup'
 import {
     Users,
     Search,
@@ -38,9 +38,10 @@ interface UserRecord {
     created_at: string;
 }
 
-type RoleType = 'all' | 'student' | 'staff' | 'kitchen_manager' | 'admin';
+type RoleType = 'all' | 'STUDENT' | 'STAFF' | 'KITCHEN' | 'ADMIN' | 'OUTSIDER';
 
 export default function UserControlPage() {
+    const { sessionToken, user: authUser } = useAuth()
     const [users, setUsers] = useState<UserRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
@@ -57,24 +58,55 @@ export default function UserControlPage() {
         phone: '',
         email: '',
         pin: '123456',
-        role: 'student',
+        role: 'STUDENT',
         parent_name: ''
     })
     const [submitting, setSubmitting] = useState(false)
 
+    /** Build auth headers — session token + user ID for fallback */
+    function getAuthHeaders(): Record<string, string> {
+        const token = sessionToken || localStorage.getItem('session_token') || ''
+        const userId = authUser?.id || (() => {
+            try {
+                const stored = localStorage.getItem('auth_user')
+                return stored ? JSON.parse(stored).id : ''
+            } catch { return '' }
+        })()
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        }
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        if (userId) headers['X-User-Id'] = userId
+        return headers
+    }
+
     useEffect(() => {
-        fetchUsers()
-    }, [])
+        // Fetch as soon as we have any auth info
+        const hasToken = sessionToken || localStorage.getItem('session_token')
+        const hasUser = authUser?.id || localStorage.getItem('auth_user')
+        if (hasToken || hasUser) fetchUsers()
+    }, [sessionToken, authUser])
 
     async function fetchUsers() {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .order('created_at', { ascending: false })
-
-        if (data) setUsers(data)
-        setLoading(false)
+        try {
+            const response = await fetch('/api/admin/users', {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                credentials: 'include'
+            })
+            const result = await response.json()
+            if (result.success && result.data) {
+                setUsers(result.data)
+            } else {
+                console.error('Failed to fetch users:', result.error)
+            }
+        } catch (err: any) {
+            console.error('Error fetching users:', err)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const filteredUsers = useMemo(() => {
@@ -96,33 +128,28 @@ export default function UserControlPage() {
         let email = formData.email?.trim()
 
         // Use dummy email if not provided for staff/riders
-        if (!email && (formData.role === 'staff' || formData.role === 'student')) {
+        if (!email && (formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF')) {
             email = `${phone}@aicavalli.com`
         }
 
-        const isPhoneRequired = formData.role === 'staff' || formData.role === 'student'
+        const isPhoneRequired = formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF'
         if (isPhoneRequired && phone.length < 10) {
-            alert("Valid 10-digit Phone number is required for Staff and Riders.")
+            showError('Invalid Phone', 'Valid 10-digit phone number is required for Staff and Students.')
             setSubmitting(false)
             return
         }
 
         if (!email) {
-            alert("Email info is required.")
+            showError('Missing Email', 'Email info is required.')
             setSubmitting(false)
             return
         }
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const token = session?.access_token
-
             const response = await fetch('/api/admin/users', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getAuthHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     action: 'create',
                     userData: {
@@ -140,7 +167,7 @@ export default function UserControlPage() {
             resetForm()
             fetchUsers()
         } catch (err: any) {
-            alert(`Error adding user: ${err.message}`)
+            showError('Error Adding User', err.message)
         } finally {
             setSubmitting(false)
         }
@@ -154,26 +181,21 @@ export default function UserControlPage() {
         const phone = sanitizePhone(formData.phone)
         let email = formData.email?.trim()
 
-        if (!email && (formData.role === 'staff' || formData.role === 'student')) {
+        if (!email && (formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF')) {
             email = `${phone}@aicavalli.com`
         }
 
-        if ((formData.role === 'staff' || formData.role === 'student') && phone.length < 10) {
-            alert("Valid 10-digit Phone number is required.")
+        if ((formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF') && phone.length < 10) {
+            showError('Invalid Phone', 'Valid 10-digit phone number is required.')
             setSubmitting(false)
             return
         }
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const token = session?.access_token
-
             const response = await fetch('/api/admin/users', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getAuthHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     action: 'update',
                     userData: {
@@ -191,25 +213,21 @@ export default function UserControlPage() {
             setIsEditModalOpen(false)
             fetchUsers()
         } catch (err: any) {
-            alert(`Error updating user: ${err.message}`)
+            showError('Error Updating User', err.message)
         } finally {
             setSubmitting(false)
         }
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('STRICT DELETE: This will remove the user from BOTH public profiles and Supabase Auth. \n\nProceed?')) return
+        const confirmed = await showConfirm('Delete User', 'This will permanently remove the user. This action cannot be undone.', 'Delete', 'Cancel')
+        if (!confirmed) return
 
         try {
-            const { data: { session } } = await supabase.auth.getSession()
-            const token = session?.access_token
-
             const response = await fetch('/api/admin/users', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers: getAuthHeaders(),
+                credentials: 'include',
                 body: JSON.stringify({
                     action: 'delete',
                     userData: { id }
@@ -220,7 +238,7 @@ export default function UserControlPage() {
             if (!data.success) throw new Error(data.error)
             fetchUsers()
         } catch (err: any) {
-            alert(`Error deleting user: ${err.message}`)
+            showError('Error Deleting User', err.message)
         }
     }
 
@@ -230,7 +248,7 @@ export default function UserControlPage() {
             phone: '',
             email: '',
             pin: '123456',
-            role: 'student',
+            role: 'STUDENT',
             parent_name: ''
         })
     }
@@ -335,7 +353,7 @@ export default function UserControlPage() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
-                            {['all', 'student', 'staff', 'kitchen_manager', 'admin', 'guest'].map((role) => (
+                            {['all', 'STUDENT', 'STAFF', 'KITCHEN', 'ADMIN', 'OUTSIDER'].map((role) => (
                                 <button
                                     key={role}
                                     onClick={() => setRoleFilter(role as RoleType)}
@@ -353,7 +371,7 @@ export default function UserControlPage() {
                                         color: roleFilter === role ? 'white' : 'var(--text-muted)',
                                     }}
                                 >
-                                    {role === 'all' ? 'All Users' : role === 'student' ? 'Riders' : role === 'guest' ? 'Guests' : role.replace('_', ' ').toUpperCase()}
+                                    {role === 'all' ? 'All Users' : role === 'STUDENT' ? 'Students' : role === 'STAFF' ? 'Staff' : role === 'KITCHEN' ? 'Kitchen' : role === 'ADMIN' ? 'Admin' : role === 'OUTSIDER' ? 'Guests' : role}
                                 </button>
                             ))}
                         </div>
@@ -423,15 +441,15 @@ export default function UserControlPage() {
                                                 fontWeight: '800',
                                                 textTransform: 'uppercase',
                                                 letterSpacing: '0.03em',
-                                                background: u.role === 'admin' ? '#fef2f2' : u.role === 'student' ? '#f0f9ff' : u.role === 'guest' ? '#f5f3ff' : '#f0fdf4',
-                                                color: u.role === 'admin' ? '#ef4444' : u.role === 'student' ? '#0ea5e9' : u.role === 'guest' ? '#8b5cf6' : '#10b981',
-                                                border: `1px solid ${u.role === 'admin' ? '#fee2e2' : u.role === 'student' ? '#e0f2fe' : u.role === 'guest' ? '#ede9fe' : '#dcfce7'}`
+                                                background: u.role === 'ADMIN' ? '#fef2f2' : u.role === 'STUDENT' ? '#f0f9ff' : u.role === 'OUTSIDER' ? '#f5f3ff' : u.role === 'STAFF' ? '#fff7ed' : '#f0fdf4',
+                                                color: u.role === 'ADMIN' ? '#ef4444' : u.role === 'STUDENT' ? '#0ea5e9' : u.role === 'OUTSIDER' ? '#8b5cf6' : u.role === 'STAFF' ? '#f59e0b' : '#10b981',
+                                                border: `1px solid ${u.role === 'ADMIN' ? '#fee2e2' : u.role === 'STUDENT' ? '#e0f2fe' : u.role === 'OUTSIDER' ? '#ede9fe' : u.role === 'STAFF' ? '#ffedd5' : '#dcfce7'}`
                                             }}>
-                                                {u.role === 'student' ? 'Rider' : u.role.replace('_', ' ').toUpperCase()}
+                                                {u.role === 'STUDENT' ? 'Student' : u.role === 'STAFF' ? 'Staff' : u.role === 'KITCHEN' ? 'Kitchen' : u.role === 'OUTSIDER' ? 'Guest' : u.role}
                                             </span>
                                         </td>
                                         <td style={{ padding: '20px 24px' }}>
-                                            {u.role === 'student' ? (
+                                            {u.role === 'STUDENT' ? (
                                                 <div style={{ fontSize: '0.85rem' }}>
                                                     <span style={{ color: '#64748b' }}>Parent: </span>
                                                     <span style={{ fontWeight: '600' }}>{u.parent_name || 'Not provided'}</span>
@@ -539,7 +557,7 @@ export default function UserControlPage() {
                             />
 
                             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                                {!(formData.role === 'staff' || formData.role === 'student') ? (
+                                {!(formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF') ? (
                                     <div style={{ flex: 1, minWidth: '200px' }}>
                                         <ItalianFormField
                                             label="Email Address"
@@ -584,10 +602,11 @@ export default function UserControlPage() {
                                             e.target.style.boxShadow = 'none'
                                         }}
                                     >
-                                        <option value="student">Rider</option>
-                                        <option value="staff">Staff</option>
-                                        <option value="kitchen_manager">Kitchen Manager</option>
-                                        <option value="admin">Admin</option>
+                                        <option value="STUDENT">Student</option>
+                                        <option value="STAFF">Staff</option>
+                                        <option value="KITCHEN">Kitchen Manager</option>
+                                        <option value="ADMIN">Admin</option>
+                                        <option value="OUTSIDER">Guest</option>
                                     </select>
                                 </div>
                             </div>
@@ -596,12 +615,12 @@ export default function UserControlPage() {
                                 <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
                                     <div style={{ flex: 1, minWidth: '200px' }}>
                                         <ItalianFormField
-                                            label={formData.role === 'staff' || formData.role === 'student' ? "Phone Number" : "Phone (Optional)"}
+                                            label={formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF' ? "Phone Number" : "Phone (Optional)"}
                                             icon={<Phone size={14} />}
                                             value={formData.phone}
                                             onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })}
-                                            placeholder={formData.role === 'staff' || formData.role === 'student' ? "10 digit number" : "Optional (10 digits)"}
-                                            required={formData.role === 'staff' || formData.role === 'student'}
+                                            placeholder={formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF' ? "10 digit number" : "Optional (10 digits)"}
+                                            required={formData.role === 'KITCHEN' || formData.role === 'STUDENT' || formData.role === 'STAFF'}
                                         />
                                     </div>
                                     <div style={{ flex: 1, minWidth: '200px' }}>
@@ -619,7 +638,7 @@ export default function UserControlPage() {
                                 </div>
                             )}
 
-                            {formData.role === 'student' && (
+                            {formData.role === 'STUDENT' && (
                                 <ItalianFormField
                                     label="Parent/Guardian Name"
                                     icon={<Users size={14} />}

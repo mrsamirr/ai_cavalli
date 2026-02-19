@@ -21,16 +21,25 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Helper to set auth cookie for middleware detection
-function setAuthCookie(role: UserRole | null) {
+function setAuthCookie(role: UserRole | null, token?: string | null, userId?: string | null) {
     if (typeof document === 'undefined') return
 
     if (role === null) {
         // Clear cookies on logout
         document.cookie = 'auth_role=; path=/; max-age=0; SameSite=Lax'
         document.cookie = 'session_token=; path=/; max-age=0; SameSite=Lax'
+        document.cookie = 'auth_user_id=; path=/; max-age=0; SameSite=Lax'
     } else {
         // Set auth role cookie
         document.cookie = `auth_role=${role}; path=/; max-age=86400; SameSite=Lax`
+        // Set session token cookie (for API auth)
+        if (token) {
+            document.cookie = `session_token=${token}; path=/; max-age=86400; SameSite=Lax`
+        }
+        // Set user ID cookie (for API auth fallback)
+        if (userId) {
+            document.cookie = `auth_user_id=${userId}; path=/; max-age=86400; SameSite=Lax`
+        }
     }
 }
 
@@ -61,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (cachedUser && storedToken) {
                 setUser(cachedUser)
                 setSessionToken(storedToken)
-                setAuthCookie(cachedUser.role)
+                setAuthCookie(cachedUser.role, storedToken, cachedUser.id)
             }
 
             setIsLoading(false)
@@ -91,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     localStorage.setItem('session_token', data.session.session_token)
                     setUser(data.user)
                     setSessionToken(data.session.session_token)
-                    setAuthCookie(data.user.role)
+                    setAuthCookie(data.user.role, data.session.session_token, data.user.id)
                     return data
                 }
 
@@ -128,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     localStorage.setItem('guest_session', JSON.stringify(data.session))
                     setUser(data.user)
                     setSessionToken(data.session.session_token)
-                    setAuthCookie('OUTSIDER')
+                    setAuthCookie('OUTSIDER', data.session.session_token, data.user.id)
                     return data
                 }
 

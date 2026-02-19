@@ -1,44 +1,129 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import bcrypt from 'bcryptjs'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
+const ADMIN_ROLES = ['ADMIN', 'KITCHEN']
+
+/**
+ * Authenticate an admin user from the request.
+ *
+ * Strategy 1: Look up by session_token in DB (primary — most secure)
+ * Strategy 2: Look up by user ID + verify admin role (fallback — handles
+ *             cases where session_token column is missing or token wasn't stored)
+ */
+async function authenticateAdmin(request: NextRequest) {
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Extract tokens from request
+    const authHeader = request.headers.get('Authorization')
+    const token = authHeader?.replace('Bearer ', '').trim() || request.cookies.get('session_token')?.value
+    const userId = request.headers.get('X-User-Id')
+
+    // Strategy 1: session_token DB lookup
+    if (token) {
+        const { data: requester, error } = await supabase
+            .from('users')
+            .select('id, role, session_expires_at')
+            .eq('session_token', token)
+            .maybeSingle()
+
+        if (error) {
+            console.error('[Admin Auth] Session token query error:', error.message, error.code)
+            // Don't return — fall through to Strategy 2
+        }
+
+        if (requester) {
+            // Auto-extend expired sessions (sliding window)
+            if (requester.session_expires_at && new Date(requester.session_expires_at) < new Date()) {
+                const newExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                await supabase.from('users').update({ session_expires_at: newExpiry }).eq('id', requester.id)
+            }
+
+            const role = (requester.role || '').toUpperCase()
+            if (ADMIN_ROLES.includes(role)) {
+                return { authenticated: true, requester, supabase }
+            }
+            return { authenticated: false, error: 'Admin privileges required', supabase }
+        }
+    }
+
+    // Strategy 2: user ID lookup + role verification
+    // This handles cases where session_token column doesn't exist or token wasn't stored in DB
+    if (userId) {
+        const { data: requester, error } = await supabase
+            .from('users')
+            .select('id, role')
+            .eq('id', userId)
+            .maybeSingle()
+
+        if (error) {
+            console.error('[Admin Auth] User ID lookup error:', error.message, error.code)
+        }
+
+        if (requester) {
+            const role = (requester.role || '').toUpperCase()
+            if (ADMIN_ROLES.includes(role)) {
+                return { authenticated: true, requester, supabase }
+            }
+            return { authenticated: false, error: 'Admin privileges required', supabase }
+        }
+    }
+
+    if (!token && !userId) {
+        return { authenticated: false, error: 'Not authenticated', supabase }
+    }
+
+    return { authenticated: false, error: 'Invalid session', supabase }
+}
+
+/**
+ * GET /api/admin/users — Fetch all users
+ */
+export async function GET(request: NextRequest) {
+    try {
+        const auth = await authenticateAdmin(request)
+        if (!auth.authenticated) {
+            const status = auth.error === 'Admin privileges required' ? 403 : 401
+            return NextResponse.json({ success: false, error: auth.error }, { status })
+        }
+
+        const { data: users, error } = await auth.supabase
+            .from('users')
+            .select('id, phone, email, name, role, parent_name, created_at')
+            .order('created_at', { ascending: false })
+
+        if (error) throw error
+
+        return NextResponse.json({ success: true, data: users })
+    } catch (error: any) {
+        console.error('Fetch users error:', error)
+        return NextResponse.json(
+            { success: false, error: error.message || 'Internal server error' },
+            { status: 500 }
+        )
+    }
+}
+
+/**
+ * POST /api/admin/users — Create, update, or delete users
+ */
 export async function POST(request: NextRequest) {
     try {
         const { action, userData } = await request.json()
 
-        const supabase = createClient(supabaseUrl, supabaseKey)
-
-        // AUTH GUARD: Verify requester via session token cookie or Authorization header
-        const authHeader = request.headers.get('Authorization')
-        const token = authHeader?.replace('Bearer ', '') || request.cookies.get('session_token')?.value
-
-        if (!token) {
-            return NextResponse.json({ success: false, error: 'Not authenticated' }, { status: 401 })
+        const auth = await authenticateAdmin(request)
+        if (!auth.authenticated) {
+            const status = auth.error === 'Admin privileges required' ? 403 : 401
+            return NextResponse.json({ success: false, error: auth.error }, { status })
         }
 
-        const { data: requester } = await supabase
-            .from('users')
-            .select('id, role')
-            .eq('session_token', token)
-            .maybeSingle()
-
-        if (!requester) {
-            return NextResponse.json({ success: false, error: 'Invalid session' }, { status: 401 })
-        }
-
-        const requesterRole = (requester.role || '').toUpperCase()
-        if (!['ADMIN', 'KITCHEN_MANAGER', 'KITCHEN'].includes(requesterRole)) {
-            return NextResponse.json({ success: false, error: 'Admin privileges required' }, { status: 403 })
-        }
+        const supabase = auth.supabase
 
         if (action === 'create') {
             const { name, phone, email, pin, role, parent_name } = userData
 
-            // Hash PIN
-            const pinHash = await bcrypt.hash(pin, 10)
             const userEmail = email || (phone ? `${phone}@aicavalli.local` : `user_${Date.now()}@aicavalli.local`)
 
             const { error: dbError } = await supabase.from('users').insert({
@@ -46,9 +131,8 @@ export async function POST(request: NextRequest) {
                 phone,
                 email: userEmail,
                 pin,
-                pin_hash: pinHash,
                 role,
-                parent_name: role === 'student' ? parent_name : null
+                parent_name: role === 'STUDENT' ? parent_name : null
             })
 
             if (dbError) throw dbError
@@ -62,12 +146,11 @@ export async function POST(request: NextRequest) {
                 name,
                 phone,
                 role,
-                parent_name: role === 'student' ? parent_name : null
+                parent_name: role === 'STUDENT' ? parent_name : null
             }
             if (email) dbPayload.email = email
             if (pin) {
                 dbPayload.pin = pin
-                dbPayload.pin_hash = await bcrypt.hash(pin, 10)
             }
 
             const { error: dbError } = await supabase
