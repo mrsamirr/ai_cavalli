@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/database/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, ArrowLeft, Plus } from "lucide-react";
-import Link from "next/link";
+import { Trash2, Plus, Sparkles } from "lucide-react";
+import { AdminPageHeader } from "@/components/layout/AdminPageHeader";
 import { ImageSelector } from "@/components/ui/ImageSelector";
 import { MenuItemSelector } from "@/components/kitchen/MenuItemSelector";
 
@@ -207,30 +207,7 @@ export default function KitchenSpecialsPage() {
           boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            marginBottom: "2rem",
-          }}
-        >
-          <Link
-            href="/kitchen"
-            style={{ color: "#666", display: "flex", alignItems: "center" }}
-          >
-            <ArrowLeft size={24} />
-          </Link>
-          <h2
-            style={{
-              margin: 0,
-              color: "var(--primary)",
-              fontFamily: "var(--font-serif)",
-            }}
-          >
-            Manage Daily Specials
-          </h2>
-        </div>
+        <AdminPageHeader title="Manage Daily Specials" icon={Sparkles} backHref="/kitchen" />
 
         <div
           style={{

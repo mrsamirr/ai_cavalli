@@ -4,12 +4,10 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/database/supabase'
 import { useAuth } from '@/lib/auth/context'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import {
     ChevronRight,
     LogOut,
-    Sparkles,
     Volume2,
     History,
     LayoutDashboard,
@@ -516,19 +514,7 @@ export default function KitchenPage() {
                             letterSpacing: '-0.02em'
                         }}>Kitchen Board</h2>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <Link href="/kitchen/specials">
-                            <Button variant="outline" size="sm" style={{
-                                borderRadius: '12px',
-                                fontWeight: '700',
-                                border: '1px solid rgba(var(--primary-rgb), 0.2)',
-                                background: 'white'
-                            }}>
-                                <Sparkles size={16} style={{ marginRight: '8px', color: 'var(--primary)' }} />
-                                Specials
-                            </Button>
-                        </Link>
-                    </div>
+
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Button

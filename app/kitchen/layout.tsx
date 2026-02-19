@@ -49,8 +49,8 @@ export default function KitchenLayout({
                 <TopNav
                     title="Kitchen"
                     links={links}
-                    accentColor="var(--surface)"
-                    accentText="var(--text)"
+                    accentColor="#FFFFFF"
+                    accentText="#1A1A1A"
                     roleLabel={getRoleLabel()}
                 />
                 <main style={{ padding: '2rem', background: '#f5f5f5', minHeight: 'calc(100vh - 60px)' }}>

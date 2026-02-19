@@ -7,8 +7,9 @@ import { useAuth } from '@/lib/auth/context'
 import { supabase } from '@/lib/database/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Trash2, ChevronLeft, ShoppingBag } from 'lucide-react'
+import { Trash2, ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Loading } from '@/components/ui/Loading'
 import { showError } from '@/components/ui/Popup'
 
@@ -159,12 +160,7 @@ export default function CartPage() {
 
     return (
         <div className="container fade-in" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-12)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
-                <Link href="/menu" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}>
-                    <ChevronLeft size={32} />
-                </Link>
-                <h1 style={{ margin: 0, fontSize: '2.5rem', fontFamily: 'var(--font-serif)' }}>Checkout</h1>
-            </div>
+            <PageHeader title="Checkout" backHref="/menu" />
 
             <div style={{
                 display: 'grid',

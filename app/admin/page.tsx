@@ -43,6 +43,7 @@ import { Loading } from '@/components/ui/Loading'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/context'
 import { useCart } from '@/lib/context/CartContext'
+import { AdminPageHeader } from '@/components/layout/AdminPageHeader'
 
 interface Order {
     id: string
@@ -263,36 +264,7 @@ export default function AdminDashboard() {
                 {/* Header */}
                 <div style={{ marginBottom: '3rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
-                                <div style={{
-                                    background: 'var(--primary)',
-                                    padding: '14px',
-                                    borderRadius: '16px',
-                                    boxShadow: '0 4px 16px rgba(var(--primary-rgb), 0.25)'
-                                }}>
-                                    <Activity size={28} color="white" />
-                                </div>
-                                <h1 style={{
-                                    fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-                                    fontWeight: '600',
-                                    margin: 0,
-                                    color: 'var(--text)',
-                                    letterSpacing: '-0.01em',
-                                }}>
-                                    Command Center
-                                </h1>
-                            </div>
-                            <p style={{
-                                color: 'var(--text-muted)',
-                                margin: '4px 0 0 0',
-                                fontSize: 'clamp(0.9rem, 2vw, 1.1rem)',
-                                fontWeight: '400',
-                                fontStyle: 'italic'
-                            }}>
-                                Real-time system analytics and control
-                            </p>
-                        </div>
+                        <AdminPageHeader title="Command Center" subtitle="Real-time system analytics and control" icon={Activity} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                             {/* Dashboard Stats Date Range */}
                             <div style={{

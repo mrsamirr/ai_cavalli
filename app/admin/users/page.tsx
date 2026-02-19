@@ -17,7 +17,6 @@ import {
     Mail,
     Phone,
     Shield,
-    ArrowLeft,
     Check,
     X,
     MoreVertical,
@@ -26,7 +25,7 @@ import {
     UserPlus,
     Filter
 } from 'lucide-react'
-import Link from 'next/link'
+import { AdminPageHeader } from '@/components/layout/AdminPageHeader'
 
 interface UserRecord {
     id: string;
@@ -275,55 +274,7 @@ export default function UserControlPage() {
                 {/* Header */}
                 <div style={{ marginBottom: '3rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                            <Link href="/admin">
-                                <div style={{
-                                    width: '48px',
-                                    height: '48px',
-                                    borderRadius: '50%',
-                                    background: 'white',
-                                    border: '1px solid rgba(var(--primary-rgb), 0.1)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'var(--text)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                                }}>
-                                    <ArrowLeft size={24} />
-                                </div>
-                            </Link>
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <div style={{
-                                        background: 'var(--primary)',
-                                        padding: '12px',
-                                        borderRadius: '16px',
-                                        boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.25)'
-                                    }}>
-                                        <Users size={28} color="white" />
-                                    </div>
-                                    <h1 style={{
-                                        fontSize: 'clamp(2.5rem, 5vw, 3.5rem)',
-                                        fontWeight: '600',
-                                        margin: 0,
-                                        color: 'var(--text)',
-                                        letterSpacing: '-0.01em',
-                                    }}>
-                                        User Control
-                                    </h1>
-                                </div>
-                                <p style={{
-                                    color: 'var(--text-muted)',
-                                    margin: '4px 0 0 0',
-                                    fontSize: 'clamp(0.9rem, 2vw, 1.1rem)',
-                                    fontStyle: 'italic'
-                                }}>
-                                    Manage staff, riders, and administrative access
-                                </p>
-                            </div>
-                        </div>
+                        <AdminPageHeader title="User Control" subtitle="Manage staff, riders, and administrative access" icon={Users} backHref="/admin" />
 
                         <button
                             onClick={() => { resetForm(); setIsAddModalOpen(true); }}

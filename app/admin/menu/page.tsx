@@ -13,13 +13,12 @@ import {
     Check,
     X,
     Filter,
-    ArrowLeft,
     Save,
     Trash2,
     Utensils
 } from 'lucide-react'
-import Link from 'next/link'
 import { ImageSelector } from '@/components/ui/ImageSelector'
+import { AdminPageHeader } from '@/components/layout/AdminPageHeader'
 
 interface MenuItem {
     id: string;
@@ -179,68 +178,7 @@ export default function AdminMenuPage() {
 
             <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
                 {/* Header Section */}
-                <div style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-                    <Link href="/admin" style={{ textDecoration: 'none' }}>
-                        <button style={{
-                            width: '52px',
-                            height: '52px',
-                            borderRadius: '50%',
-                            border: '2px solid var(--primary)',
-                            background: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s ease',
-                            boxShadow: '0 2px 8px rgba(var(--primary-rgb), 0.1)'
-                        }}
-                            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                e.currentTarget.style.background = 'var(--primary)'
-                                const svg = e.currentTarget.querySelector('svg')
-                                if (svg) svg.style.color = 'white'
-                            }}
-                            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                                e.currentTarget.style.background = 'white'
-                                const svg = e.currentTarget.querySelector('svg')
-                                if (svg) svg.style.color = 'var(--primary)'
-                            }}
-                        >
-                            <ArrowLeft size={22} color="var(--primary)" style={{ transition: 'all 0.3s ease' }} />
-                        </button>
-                    </Link>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
-                            <div style={{
-                                background: 'var(--primary)',
-                                padding: '14px',
-                                borderRadius: '16px',
-                                boxShadow: '0 4px 16px rgba(var(--primary-rgb), 0.25)'
-                            }}>
-                                <Utensils size={28} color="white" />
-                            </div>
-                            <div>
-                                <h1 style={{
-                                    fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-                                    fontWeight: '600',
-                                    margin: 0,
-                                    color: 'var(--text)',
-                                    letterSpacing: '-0.01em',
-                                }}>
-                                    Menu Management
-                                </h1>
-                                <p style={{
-                                    color: 'var(--text-muted)',
-                                    margin: '4px 0 0 0',
-                                    fontSize: 'clamp(0.9rem, 2vw, 1.1rem)',
-                                    fontWeight: '400',
-                                    fontStyle: 'italic'
-                                }}>
-                                    Configure and manage your restaurant menu items
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <AdminPageHeader title="Menu Management" subtitle="Configure and manage your restaurant menu items" icon={Utensils} backHref="/admin" />
 
                 <div style={{
                     display: 'grid',

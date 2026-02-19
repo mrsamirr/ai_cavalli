@@ -7,8 +7,8 @@ import { CategoryBadge } from '@/components/ui/CategoryBadge'
 import { MenuItemCard, MenuItem } from '@/components/ui/MenuItemCard'
 import { useCart } from '@/lib/context/CartContext'
 import { useAuth } from '@/lib/auth/context'
-import { ChevronLeft, Utensils, X, LayoutGrid } from 'lucide-react'
-import Link from 'next/link'
+import { Utensils, X, LayoutGrid } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Loading } from '@/components/ui/Loading'
 import { Button } from '@/components/ui/button'
 import { useRouter } from 'next/navigation'
@@ -148,25 +148,7 @@ export default function MenuPage() {
     return (
         <>
             <div className="container fade-in" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-12)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: '1rem' }}>
-                    {/* Header: Editorial Style */}
-                    <header className="container" style={{ paddingTop: '2rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', }}>
-                            <Link href="/home" style={{ color: ITALIAN_RED, transition: 'transform 0.2s' }} className="hover-scale">
-                                <ChevronLeft size={32} strokeWidth={1.5} />
-                            </Link>
-                            <div>
-                                <span style={{ letterSpacing: '0.4em', fontSize: '0.65rem', color: '#888', textTransform: 'uppercase' }}>
-                                    Ai Cavalli Ristorante
-                                </span>
-                                <h1 style={{ margin: 0, fontSize: '3rem', fontFamily: 'var(--font-serif)', fontWeight: 400 }}>
-                                    La Carta
-                                </h1>
-                            </div>
-                        </div>
-                    </header>
-
-                </div>
+                <PageHeader title="Menu" backHref="/home" />
 
                 <div style={{
                     position: 'sticky',

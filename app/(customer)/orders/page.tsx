@@ -5,8 +5,9 @@ import { supabase } from '@/lib/database/supabase'
 import { useAuth } from '@/lib/auth/context'
 
 import { useSearchParams } from 'next/navigation'
-import { ChevronLeft, Package, Clock, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
+import { Package, Clock, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/Loading'
 import { Utensils, Receipt } from 'lucide-react'
@@ -215,14 +216,7 @@ export default function OrdersPage() {
                     onPrintComplete={handlePrintComplete}
                 />
             )}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
-                <Link href={user ? "/home" : "/menu"} style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}>
-                    <ChevronLeft size={32} />
-                </Link>
-                <h1 style={{ margin: 0, fontSize: '2.5rem', fontFamily: 'var(--font-serif)' }}>
-                    {orderIdParam && !user ? 'Order Status' : 'My Orders'}
-                </h1>
-            </div>
+            <PageHeader title={orderIdParam && !user ? 'Order Status' : 'My Orders'} backHref={user ? '/home' : '/menu'} />
 
             {user && (
                 <div style={{
@@ -240,7 +234,7 @@ export default function OrdersPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
-                                {orders.length > 0 ? 'Finalize Your Meal' : 'Ready for the Bill?'}
+                                   {orders.length > 0 ? 'Finalize Your Meal' : 'Ready for the Bill?'}
                             </h3>
                             {orders.length > 0 ? (
                                 <p style={{ margin: 0, opacity: 0.9, fontSize: '0.875rem' }}>

@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth/context'
 import { ProtectedRoute } from '@/lib/auth/protected-route'
 import { TopNav } from '@/components/layout/TopNav'
+import { PopupProvider } from '@/components/ui/Popup'
 
 export default function AdminLayout({
     children,
@@ -33,13 +34,14 @@ export default function AdminLayout({
                 <TopNav
                     title="Admin Portal"
                     links={links}
-                    accentColor="#1A1A1A"
-                    accentText="#FFFFFF"
+                    accentColor="#FFFFFF"
+                    accentText="#1A1A1A"
                     roleLabel="Admin"
                 />
                 <main style={{ padding: '2rem', background: '#f5f5f5', minHeight: 'calc(100vh - 60px)' }}>
                     {children}
                 </main>
+                <PopupProvider />
             </div>
         </ProtectedRoute>
     )
