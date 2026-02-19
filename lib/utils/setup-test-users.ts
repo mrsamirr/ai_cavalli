@@ -16,7 +16,7 @@ interface TestUser {
     email: string
     phone: string
     name: string
-    role: 'STUDENT' | 'KITCHEN' | 'ADMIN'
+    role: 'RIDER' | 'KITCHEN' | 'ADMIN'
     pin: string
     position?: string
 }
@@ -24,10 +24,10 @@ interface TestUser {
 // Test users to create
 const testUsers: TestUser[] = [
     {
-        email: 'student@test.com',
+        email: 'rider@test.com',
         phone: '9876543210',
-        name: 'Test Student',
-        role: 'STUDENT',
+        name: 'Test RIDER',
+        role: 'RIDER',
         pin: '123456'
     },
     {

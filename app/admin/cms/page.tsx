@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { ImageSelector } from '@/components/ui/ImageSelector'
 import { AdminPageHeader } from '@/components/layout/AdminPageHeader'
+import { showConfirm, showError } from '@/components/ui/Popup'
 
 interface Announcement {
     id: string
@@ -74,18 +75,19 @@ export default function CMSPage() {
             setImageUrl('')
             fetchNews()
         } else {
-            alert(`Error adding news: ${error.message}`)
+            showError(`Error adding news: ${error.message}`, `"please try again."`)
         }
         setLoading(false)
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('Are you sure you want to delete this announcement?')) return
+        const confirmed = await showConfirm('Are you sure you want to delete this announcement?', "This action cannot be undone.")
+        if (!confirmed) return
         const { error } = await supabase.from('announcements').delete().eq('id', id)
         if (!error) {
             fetchNews()
         } else {
-            alert(`Error deleting news: ${error.message}`)
+            showError(`Error deleting news: ${error.message}`, `"please try again."`)
         }
     }
 

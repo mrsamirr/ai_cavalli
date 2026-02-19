@@ -157,11 +157,11 @@ export default function AdminDashboard() {
             })
             setRevenueData(Object.values(dailyRevenue).sort((a, b) => a.rawDate.localeCompare(b.rawDate)).slice(-30))
 
-            // 2. Process Demographic Data (User role: student -> UI label: Rider)
+            // 2. Process Demographic Data (User role: RIDER -> UI label: Rider)
             const demographics = { rider: 0, staff: 0, guest: 0 }
             orders.forEach(o => {
                 const role = o.user?.role || 'guest'
-                if (role === 'student') demographics.rider++
+                if (role === 'RIDER') demographics.rider++
                 else if (role === 'staff') demographics.staff++
                 else demographics.guest++
             })
@@ -220,13 +220,13 @@ export default function AdminDashboard() {
                 const rows = data.map(o => {
                     const role = o.user?.role || (o.guest_info ? 'guest' : 'unknown')
                     const name = o.user?.name || o.guest_info?.name || 'Guest'
-                    const parentName = o.user?.role === 'student' ? (o.user?.parent_name || 'N/A') : ''
+                    const parentName = o.user?.role === 'RIDER' ? (o.user?.parent_name || 'N/A') : ''
                     const phone = o.user?.phone || o.guest_info?.phone || 'N/A'
                     const guests = o.num_guests || 1
                     const itemSummary = o.items ? o.items.map((i: any) => `${i.menu_item?.name} (x${i.quantity})`).join('; ') : 'No items'
                     const finalTotal = (o.total - (o.discount_amount || 0)).toFixed(2)
                     const timestamp = new Date(o.created_at).toLocaleString()
-                    return [`"${name}"`, `"${parentName}"`, `"${phone}"`, role === 'student' ? 'RIDER' : role.toUpperCase(), guests, `"${itemSummary}"`, finalTotal, `"${timestamp}"`]
+                    return [`"${name}"`, `"${parentName}"`, `"${phone}"`, role === 'RIDER' ? 'RIDER' : role.toUpperCase(), guests, `"${itemSummary}"`, finalTotal, `"${timestamp}"`]
                 })
                 const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })

@@ -38,7 +38,7 @@ interface UserRecord {
   created_at: string;
 }
 
-type RoleType = "all" | "STUDENT" | "STAFF" | "KITCHEN" | "ADMIN" | "OUTSIDER";
+type RoleType = "all" | "RIDER" | "STAFF" | "KITCHEN" | "ADMIN" | "OUTSIDER";
 
 export default function UserControlPage() {
   const { sessionToken, user: authUser } = useAuth();
@@ -58,7 +58,7 @@ export default function UserControlPage() {
     phone: "",
     email: "",
     pin: "123456",
-    role: "STUDENT",
+    role: "RIDER",
     parent_name: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -135,7 +135,7 @@ export default function UserControlPage() {
     if (
       !email &&
       (formData.role === "KITCHEN" ||
-        formData.role === "STUDENT" ||
+        formData.role === "RIDER" ||
         formData.role === "STAFF")
     ) {
       email = `${phone}@aicavalli.com`;
@@ -143,12 +143,12 @@ export default function UserControlPage() {
 
     const isPhoneRequired =
       formData.role === "KITCHEN" ||
-      formData.role === "STUDENT" ||
+      formData.role === "RIDER" ||
       formData.role === "STAFF";
     if (isPhoneRequired && phone.length < 10) {
       showError(
         "Invalid Phone",
-        "Valid 10-digit phone number is required for Staff and Students.",
+        "Valid 10-digit phone number is required for Staff and RIDERs.",
       );
       setSubmitting(false);
       return;
@@ -200,7 +200,7 @@ export default function UserControlPage() {
     if (
       !email &&
       (formData.role === "KITCHEN" ||
-        formData.role === "STUDENT" ||
+        formData.role === "RIDER" ||
         formData.role === "STAFF")
     ) {
       email = `${phone}@aicavalli.com`;
@@ -208,7 +208,7 @@ export default function UserControlPage() {
 
     if (
       (formData.role === "KITCHEN" ||
-        formData.role === "STUDENT" ||
+        formData.role === "RIDER" ||
         formData.role === "STAFF") &&
       phone.length < 10
     ) {
@@ -281,7 +281,7 @@ export default function UserControlPage() {
       phone: "",
       email: "",
       pin: "123456",
-      role: "STUDENT",
+      role: "RIDER",
       parent_name: "",
     });
   }
@@ -441,7 +441,7 @@ export default function UserControlPage() {
                 paddingBottom: "4px",
               }}
             >
-              {["all", "STUDENT", "STAFF", "KITCHEN", "ADMIN", "OUTSIDER"].map(
+              {["all", "RIDER", "STAFF", "KITCHEN", "ADMIN", "OUTSIDER"].map(
                 (role) => (
                   <button
                     key={role}
@@ -467,8 +467,8 @@ export default function UserControlPage() {
                   >
                     {role === "all"
                       ? "All Users"
-                      : role === "STUDENT"
-                        ? "Students"
+                      : role === "RIDER"
+                        ? "rider"
                         : role === "STAFF"
                           ? "Staff"
                           : role === "KITCHEN"
@@ -665,7 +665,7 @@ export default function UserControlPage() {
                           background:
                             u.role === "ADMIN"
                               ? "#fef2f2"
-                              : u.role === "STUDENT"
+                              : u.role === "RIDER"
                                 ? "#f0f9ff"
                                 : u.role === "OUTSIDER"
                                   ? "#f5f3ff"
@@ -675,18 +675,18 @@ export default function UserControlPage() {
                           color:
                             u.role === "ADMIN"
                               ? "#ef4444"
-                              : u.role === "STUDENT"
+                              : u.role === "RIDER"
                                 ? "#0ea5e9"
                                 : u.role === "OUTSIDER"
                                   ? "#8b5cf6"
                                   : u.role === "STAFF"
                                     ? "#f59e0b"
                                     : "#10b981",
-                          border: `1px solid ${u.role === "ADMIN" ? "#fee2e2" : u.role === "STUDENT" ? "#e0f2fe" : u.role === "OUTSIDER" ? "#ede9fe" : u.role === "STAFF" ? "#ffedd5" : "#dcfce7"}`,
+                          border: `1px solid ${u.role === "ADMIN" ? "#fee2e2" : u.role === "RIDER" ? "#e0f2fe" : u.role === "OUTSIDER" ? "#ede9fe" : u.role === "STAFF" ? "#ffedd5" : "#dcfce7"}`,
                         }}
                       >
-                        {u.role === "STUDENT"
-                          ? "Student"
+                        {u.role === "RIDER"
+                          ? "RIDER"
                           : u.role === "STAFF"
                             ? "Staff"
                             : u.role === "KITCHEN"
@@ -697,7 +697,7 @@ export default function UserControlPage() {
                       </span>
                     </td>
                     <td style={{ padding: "20px 24px" }}>
-                      {u.role === "STUDENT" ? (
+                      {u.role === "RIDER" ? (
                         <div style={{ fontSize: "0.85rem" }}>
                           <span style={{ color: "#64748b" }}>Parent: </span>
                           <span style={{ fontWeight: "600" }}>
@@ -863,7 +863,7 @@ export default function UserControlPage() {
               <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
                 {!(
                   formData.role === "KITCHEN" ||
-                  formData.role === "STUDENT" ||
+                  formData.role === "RIDER" ||
                   formData.role === "STAFF"
                 ) ? (
                   <div style={{ flex: 1, minWidth: "200px" }}>
@@ -951,7 +951,7 @@ export default function UserControlPage() {
                         e.target.style.boxShadow = "none";
                       }}
                     >
-                      <option value="STUDENT">Student</option>
+                      <option value="RIDER">RIDER</option>
                       <option value="STAFF">Staff</option>
                       <option value="KITCHEN">Kitchen Manager</option>
                       <option value="ADMIN">Admin</option>
@@ -984,7 +984,7 @@ export default function UserControlPage() {
                     <ItalianFormField
                       label={
                         formData.role === "KITCHEN" ||
-                        formData.role === "STUDENT" ||
+                        formData.role === "RIDER" ||
                         formData.role === "STAFF"
                           ? "Phone Number"
                           : "Phone (Optional)"
@@ -996,14 +996,14 @@ export default function UserControlPage() {
                       }
                       placeholder={
                         formData.role === "KITCHEN" ||
-                        formData.role === "STUDENT" ||
+                        formData.role === "RIDER" ||
                         formData.role === "STAFF"
                           ? "10 digit number"
                           : "Optional (10 digits)"
                       }
                       required={
                         formData.role === "KITCHEN" ||
-                        formData.role === "STUDENT" ||
+                        formData.role === "RIDER" ||
                         formData.role === "STAFF"
                       }
                     />
@@ -1025,7 +1025,7 @@ export default function UserControlPage() {
                 </div>
               )}
 
-              {formData.role === "STUDENT" && (
+              {formData.role === "RIDER" && (
                 <ItalianFormField
                   label="Parent/Guardian Name"
                   icon={<Users size={14} />}

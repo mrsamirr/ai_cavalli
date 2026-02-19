@@ -27,7 +27,7 @@ interface Category {
 export default function MenuPage() {
     const { user, isLoading: authLoading } = useAuth()
     const role = user?.role
-    const isStudentLikeRole = role === 'STUDENT' || role === 'STAFF'
+    const isRIDERLikeRole = role === 'RIDER' || role === 'STAFF'
     const [categories, setCategories] = useState<Category[]>([])
     const [items, setItems] = useState<MenuPageItem[]>([])
     const [specials, setSpecials] = useState<MenuPageItem[]>([])
@@ -72,12 +72,12 @@ export default function MenuPage() {
 
     const displayedCategories = useMemo(() => {
         return categories.filter(cat => {
-            if (cat.name === 'Fixed Menu' && !isStudentLikeRole) {
+            if (cat.name === 'Fixed Menu' && !isRIDERLikeRole) {
                 return false
             }
             return true
         })
-    }, [categories, isStudentLikeRole])
+    }, [categories, isRIDERLikeRole])
 
     const fixedMenuCategoryId = useMemo(() => {
         return categories.find(c => c.name === 'Fixed Menu')?.id
@@ -199,7 +199,7 @@ export default function MenuPage() {
                 )}
 
                 {/* Staff Fixed Menu Section - Only for Staff */}
-                {isStudentLikeRole && filteredFixedItems.length > 0 && (activeCategory === 'all' || activeCategory === fixedMenuCategoryId) && (
+                {isRIDERLikeRole && filteredFixedItems.length > 0 && (activeCategory === 'all' || activeCategory === fixedMenuCategoryId) && (
                     <div style={{ marginBottom: 'var(--space-10)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                             <div style={{ width: '8px', height: '24px', background: '#3B82F6', borderRadius: '4px' }} />

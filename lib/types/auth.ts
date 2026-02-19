@@ -1,9 +1,9 @@
 /**
  * Unified Authentication & RBAC Types
- * Roles: STUDENT, STAFF, OUTSIDER, KITCHEN, ADMIN
+ * Roles: RIDER, STAFF, OUTSIDER, KITCHEN, ADMIN
  */
 
-export type UserRole = 'STUDENT' | 'STAFF' | 'OUTSIDER' | 'KITCHEN' | 'ADMIN'
+export type UserRole = 'RIDER' | 'STAFF' | 'OUTSIDER' | 'KITCHEN' | 'ADMIN'
 
 export interface AuthUser {
     id: string
@@ -63,8 +63,8 @@ export interface AuthContextType {
  * Role-Based Access Control Matrix
  */
 export const RBAC = {
-    STUDENT: {
-        name: 'Student',
+    RIDER: {
+        name: 'RIDER',
         permissions: [
             'view_menu',
             'create_order',
@@ -135,13 +135,13 @@ export const routeAccess: Record<string, UserRole[]> = {
     '/login': [],
     '/auth/callback': [],
 
-    // Student/Staff and Guest/Outsider routes
-    '/home': ['STUDENT', 'STAFF', 'OUTSIDER'],
-    '/menu': ['STUDENT', 'STAFF', 'OUTSIDER'],
-    '/cart': ['STUDENT', 'STAFF', 'OUTSIDER'],
-    '/orders': ['STUDENT', 'STAFF', 'OUTSIDER'],
-    '/profile': ['STUDENT', 'STAFF', 'OUTSIDER'],
-    '/status': ['OUTSIDER', 'STUDENT', 'STAFF'],
+    // RIDER/Staff and Guest/Outsider routes
+    '/home': ['RIDER', 'STAFF', 'OUTSIDER'],
+    '/menu': ['RIDER', 'STAFF', 'OUTSIDER'],
+    '/cart': ['RIDER', 'STAFF', 'OUTSIDER'],
+    '/orders': ['RIDER', 'STAFF', 'OUTSIDER'],
+    '/profile': ['RIDER', 'STAFF', 'OUTSIDER'],
+    '/status': ['OUTSIDER', 'RIDER', 'STAFF'],
 
     // Kitchen routes
     '/kitchen': ['KITCHEN', 'ADMIN'],
@@ -159,12 +159,12 @@ export const routeAccess: Record<string, UserRole[]> = {
 
     // API routes
     '/api/auth/login': [],
-    '/api/auth/logout': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
-    '/api/auth/refresh': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
-    '/api/orders/create': ['STUDENT', 'STAFF', 'OUTSIDER'],
-    '/api/orders/list': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
+    '/api/auth/logout': ['RIDER', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
+    '/api/auth/refresh': ['RIDER', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
+    '/api/orders/create': ['RIDER', 'STAFF', 'OUTSIDER'],
+    '/api/orders/list': ['RIDER', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN'],
     '/api/admin/users': ['ADMIN'],
-    '/api/users/profile': ['STUDENT', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN']
+    '/api/users/profile': ['RIDER', 'STAFF', 'OUTSIDER', 'KITCHEN', 'ADMIN']
 }
 
 /**

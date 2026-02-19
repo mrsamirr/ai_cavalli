@@ -8,6 +8,7 @@ import { Trash2, Plus, Sparkles } from "lucide-react";
 import { AdminPageHeader } from "@/components/layout/AdminPageHeader";
 import { ImageSelector } from "@/components/ui/ImageSelector";
 import { MenuItemSelector } from "@/components/kitchen/MenuItemSelector";
+import { showError, showInfo } from "@/components/ui/Popup";
 
 interface MenuItem {
   id: string;
@@ -106,7 +107,7 @@ export default function KitchenSpecialsPage() {
       .single();
 
     if (itemError) {
-      alert("Error creating menu item: " + itemError.message);
+      showError("Error creating menu item: " + itemError.message, `"please try again."`);
       setLoading(false);
       return;
     }
@@ -132,8 +133,9 @@ export default function KitchenSpecialsPage() {
       setNewImageUrl("");
       fetchData();
     } else {
-      alert(
+      showError(
         "Item created but failed to add as special: " + specialError.message,
+        `"please try again."`
       );
     }
     setLoading(false);
@@ -150,7 +152,7 @@ export default function KitchenSpecialsPage() {
     
     if (existing) {
       const itemName = items.find(i => i.id === menuItemId)?.name || 'This item';
-      alert(`${itemName} is already added as a ${period} special today!`);
+      showInfo(`${itemName} is already added as a ${period} special today!` , `Please choose a different item or period.`);
       return;
     }
 
@@ -168,14 +170,14 @@ export default function KitchenSpecialsPage() {
       const result = await res.json();
       if (!res.ok) {
         console.error('Error adding special:', result.error);
-        alert("Failed to add special: " + result.error);
+        showError("Failed to add special: " + result.error, `"please try again."`);
       } else {
         setSelectedItem("");
         await fetchData();
       }
     } catch (err: any) {
       console.error('Error adding special:', err);
-      alert("Failed to add special: " + err.message);
+      showError("Failed to add special: " + err.message, `"please try again."`);
     }
     setLoading(false);
   }
@@ -186,10 +188,10 @@ export default function KitchenSpecialsPage() {
       const res = await fetch(`/api/kitchen/specials?id=${id}`, { method: 'DELETE' });
       const result = await res.json();
       if (!res.ok) {
-        alert("Failed to remove special: " + result.error);
+        showError("Failed to remove special: " + result.error, `"please try again."`);
       }
     } catch (err: any) {
-      alert("Failed to remove special: " + err.message);
+      showError("Failed to remove special: " + err.message, `"please try again."`);
     }
     await fetchData();
     setLoading(false);

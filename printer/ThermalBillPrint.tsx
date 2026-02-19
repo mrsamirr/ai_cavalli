@@ -1,5 +1,6 @@
 'use client'
 
+import { showInfo } from '@/components/ui/Popup'
 import { useRef } from 'react'
 
 interface BillItem {
@@ -36,7 +37,7 @@ export function ThermalBillPrint({ bill, onPrintComplete }: ThermalBillPrintProp
         // Create a new window for printing
         const printWindow = window.open('', '_blank', 'width=300,height=600')
         if (!printWindow) {
-            alert('Please allow popups to print bills')
+            showInfo('Please allow popups to print bills', 'Please enable popups in your browser settings to print bills.')
             return
         }
 

@@ -71,7 +71,7 @@ export default function OrdersPage() {
                     }
                 }
                 // For ALL roles (including OUTSIDER fallback): build a virtual session from orders
-                // This ensures STUDENT/STAFF can also use "Get the Bill"
+                // This ensures RIDER/STAFF can also use "Get the Bill"
                 // We'll set a marker so handleGetBill knows to use the user-based flow
                 if (user) {
                     setActiveSession({ _virtual: true, userId: user.id })
@@ -155,7 +155,7 @@ export default function OrdersPage() {
                 })
                 data = await response.json()
             } else {
-                // User-based flow for STUDENT/STAFF or OUTSIDER without session
+                // User-based flow for RIDER/STAFF or OUTSIDER without session
                 const response = await fetch('/api/bills/user', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -316,13 +316,14 @@ export default function OrdersPage() {
                         )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', position: 'relative', zIndex: 1 }}>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>
+                                <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: orders.length > 0 ? 'white' : 'var(--text)' }}>
                                     {orders.length > 0 ? 'Finalize Your Meal' : 'Ready for the Bill?'}
-                                </h3>
+                                </h2>
                                 <p style={{
                                     margin: '4px 0 0',
                                     fontSize: '0.8rem',
-                                    opacity: orders.length > 0 ? 0.9 : 0.6,
+                                    color: orders.length > 0 ? 'rgba(255,255,255,0.95)' : 'var(--text-muted)',
+                                    opacity: 1,
                                 }}>
                                     {orders.length > 0
                                         ? 'Generate your bill and print or save as PDF'
@@ -333,7 +334,7 @@ export default function OrdersPage() {
                                 width: '44px',
                                 height: '44px',
                                 borderRadius: '12px',
-                                background: orders.length > 0 ? 'rgba(255,255,255,0.15)' : 'rgba(16, 185, 129, 0.1)',
+                                background: orders.length > 0 ? 'rgba(255,255,255,0.2)' : 'rgba(16, 185, 129, 0.15)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',

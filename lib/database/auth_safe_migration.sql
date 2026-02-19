@@ -25,7 +25,7 @@ BEGIN
     ALTER TABLE public.users ALTER COLUMN role TYPE TEXT USING role::TEXT;
     
     -- Map old role values to new ones
-    UPDATE public.users SET role = 'STUDENT' WHERE role = 'student';
+    UPDATE public.users SET role = 'RIDER' WHERE role = 'rider';
     UPDATE public.users SET role = 'OUTSIDER' WHERE role = 'guest';
     UPDATE public.users SET role = 'KITCHEN' WHERE role IN ('staff', 'kitchen_manager');
     UPDATE public.users SET role = 'ADMIN' WHERE role = 'admin';
@@ -34,7 +34,7 @@ BEGIN
     DROP TYPE IF EXISTS user_role CASCADE;
     
     -- Create new enum
-    CREATE TYPE user_role AS ENUM ('STUDENT', 'OUTSIDER', 'KITCHEN', 'ADMIN');
+    CREATE TYPE user_role AS ENUM ('RIDER', 'OUTSIDER', 'KITCHEN', 'ADMIN');
     
     -- Convert back to enum
     ALTER TABLE public.users ALTER COLUMN role TYPE user_role USING role::user_role;
@@ -158,19 +158,19 @@ END $$;
 -- DONE! Now create test users (change PINs as needed):
 -- ============================================================
 
--- STUDENT (PIN: 123456)
+-- RIDER (PIN: 123456)
 INSERT INTO public.users (id, email, phone, name, role, pin_hash)
 VALUES (
     gen_random_uuid(),
-    'student@test.com',
+    'rider@test.com',
     '9876543210',
-    'Test Student',
-    'STUDENT',
+    'Test RIDER',
+    'RIDER',
     crypt('123456', gen_salt('bf', 8))
 ) ON CONFLICT (phone) DO UPDATE SET
     pin_hash = crypt('123456', gen_salt('bf', 8)),
-    role = 'STUDENT',
-    name = 'Test Student';
+    role = 'RIDER',
+    name = 'Test RIDER';
 
 -- KITCHEN (PIN: 123456)
 INSERT INTO public.users (id, email, phone, name, role, position, pin_hash)

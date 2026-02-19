@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { ImageSelector } from '@/components/ui/ImageSelector'
 import { AdminPageHeader } from '@/components/layout/AdminPageHeader'
+import { showError } from '@/components/ui/Popup'
 
 interface MenuItem {
     id: string;
@@ -118,7 +119,7 @@ export default function AdminMenuPage() {
         const finalCategoryId = categoryId || categories[0]?.id
 
         if (!finalCategoryId) {
-            alert('Error: No category selected.')
+            showError('Error: No category selected.', 'Please create a category before adding menu items.')
             setLoading(false)
             return
         }
@@ -145,7 +146,7 @@ export default function AdminMenuPage() {
             await fetchData()
             resetForm()
         } else {
-            alert(`Error saving item: ${error.message}`)
+            showError(`Error saving item: ${error.message}`, `"please try again."`)
         }
         setLoading(false)
     }

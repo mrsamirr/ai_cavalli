@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
             .from('users')
             .select('id, role')
             .eq('phone', sanitizedPhone)
-            .in('role', ['staff', 'student'])
+            .in('role', ['staff', 'rider'])
             .maybeSingle()
 
         if (staffOrRider) {

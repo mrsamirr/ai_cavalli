@@ -1,6 +1,6 @@
 -- COMPREHENSIVE AUTH REFACTOR
 -- Single unified auth flow with RBAC (Role-Based Access Control)
--- Roles: STUDENT, OUTSIDER, KITCHEN, ADMIN
+-- Roles: RIDER, OUTSIDER, KITCHEN, ADMIN
 
 -- 1. Drop old user_role enum and create new one
 DO $$
@@ -9,7 +9,7 @@ BEGIN
     DROP TYPE IF EXISTS user_role CASCADE;
     
     -- Create new role enum
-    CREATE TYPE user_role AS ENUM ('STUDENT', 'OUTSIDER', 'KITCHEN', 'ADMIN');
+    CREATE TYPE user_role AS ENUM ('RIDER', 'OUTSIDER', 'KITCHEN', 'ADMIN');
 END $$;
 
 -- 2. Recreate users table with unified structure
@@ -20,10 +20,10 @@ CREATE TABLE public.users (
     email text UNIQUE NOT NULL,
     phone text UNIQUE NOT NULL,
     name text NOT NULL,
-    role user_role NOT NULL DEFAULT 'STUDENT',
+    role user_role NOT NULL DEFAULT 'RIDER',
     
     -- Additional fields based on role
-    parent_name text,           -- For STUDENT only
+    parent_name text,           -- For RIDER only
     position text,              -- For KITCHEN/ADMIN (e.g., "Chef", "Manager")
     
     -- Account lock (anti-brute force)
@@ -150,7 +150,7 @@ DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
 DROP POLICY IF EXISTS "Staff view all orders" ON public.orders;
 DROP POLICY IF EXISTS "Users can insert own orders" ON public.orders;
 
--- Students and Outsiders can view their own orders
+-- RIDERs and Outsiders can view their own orders
 CREATE POLICY "users_view_own_orders" ON public.orders FOR SELECT
 USING (auth.uid() = user_id);
 

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get("Authorization");
     let isAuthorized = false;
 
-    // Strategy 1: Custom session token (PIN-based auth for STUDENT/STAFF/KITCHEN/ADMIN)
+    // Strategy 1: Custom session token (PIN-based auth for RIDER/STAFF/KITCHEN/ADMIN)
     // Also auto-extends expired sessions when the token still matches (sliding window)
     if (
       !isAuthorized &&

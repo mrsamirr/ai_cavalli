@@ -39,7 +39,7 @@ export default function CartPage() {
             }
             return { tableName: 'Guest', numGuests: 1 }
         }
-        // STUDENT/STAFF/KITCHEN: use name as identifier
+        // RIDER/STAFF/KITCHEN: use name as identifier
         return { tableName: user?.name || user?.role || 'Staff', numGuests: 1 }
     }
 

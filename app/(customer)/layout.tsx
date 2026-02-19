@@ -21,7 +21,7 @@ export default function CustomerLayout({
             } else if (user.role === 'KITCHEN' || user.role === 'ADMIN') {
                 router.push('/kitchen')
             }
-            // STUDENT and OUTSIDER can both access customer portal
+            // RIDER and OUTSIDER can both access customer portal
         }
     }, [user, isLoading, router])
 
@@ -36,7 +36,7 @@ export default function CustomerLayout({
         }}>Loading...</div>
     }
 
-    // Render for STUDENT and OUTSIDER roles
+    // Render for RIDER and OUTSIDER roles
     if (!user || user.role === 'KITCHEN' || user.role === 'ADMIN') {
         return null
     }

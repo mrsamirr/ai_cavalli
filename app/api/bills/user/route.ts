@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
  * Generate User Bill API
  *
  * Creates a consolidated bill from all unbilled orders for a user.
- * Works for ALL roles (STUDENT, STAFF, OUTSIDER, etc.) without
+ * Works for ALL roles (RIDER, STAFF, OUTSIDER, etc.) without
  * requiring a guest_session.
  */
 export async function POST(request: NextRequest) {

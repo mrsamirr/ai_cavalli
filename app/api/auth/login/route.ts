@@ -14,7 +14,7 @@ import { sanitizePhone } from '@/lib/utils/phone'
 
 /**
  * Unified Login Endpoint
- * - PIN login: login_type = 'student' | 'kitchen' | 'staff'
+ * - PIN login: login_type = 'rider' | 'kitchen' | 'staff'
  * - Guest login: login_type = 'guest'
  * No Supabase Auth dependency — uses direct DB + bcryptjs
  */
@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // ─── FLOW 1: PIN-based login (Student / Kitchen / Admin) ───
-        if (login_type === 'student' || login_type === 'kitchen' || login_type === 'staff') {
+        // ─── FLOW 1: PIN-based login (RIDER / Kitchen / Admin) ───
+        if (login_type === 'rider' || login_type === 'kitchen' || login_type === 'staff') {
             if (!pin || pin.length < 6) {
                 return NextResponse.json({ success: false, error: 'PIN is required (6 digits)' }, { status: 400 })
             }
@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
             
             // console.log('LOGIN DEBUG: Found user:', { id: user.id, phone: user.phone, role: user.role, rawRole, userRole, hasPin: !!user.pin, hasPinHash: !!user.pin_hash })
 
-            // Only STUDENT/STAFF/KITCHEN/ADMIN can use PIN login
-            if (!['STUDENT', 'STAFF', 'KITCHEN', 'ADMIN'].includes(userRole)) {
+            // Only RIDER/STAFF/KITCHEN/ADMIN can use PIN login
+            if (!['RIDER', 'STAFF', 'KITCHEN', 'ADMIN'].includes(userRole)) {
                 return NextResponse.json(
                     { success: false, error: 'Use guest check-in for this account' },
                     { status: 403 }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
             if (staffUser) {
                 const staffRole = (staffUser.role || '').toUpperCase()
-                if (['STUDENT', 'STAFF', 'KITCHEN', 'ADMIN'].includes(staffRole)) {
+                if (['RIDER', 'STAFF', 'KITCHEN', 'ADMIN'].includes(staffRole)) {
                     return NextResponse.json(
                         { success: false, error: 'This phone is registered to staff. Use staff login.' },
                         { status: 400 }

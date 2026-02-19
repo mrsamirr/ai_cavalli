@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         initializeAuth()
     }, [])
 
-    // Login handler for PIN-based (STUDENT/KITCHEN/ADMIN)
+    // Login handler for PIN-based (RIDER/KITCHEN/ADMIN)
     const login = useCallback(
         async (credentials: LoginCredentials): Promise<AuthResponse> => {
             try {
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         phone: credentials.phone,
                         pin: credentials.pin,
-                        login_type: 'student'
+                        login_type: 'rider'
                     })
                 })
 

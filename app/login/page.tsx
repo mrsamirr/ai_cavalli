@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { User, KeyRound, Utensils, ArrowLeft, ShieldCheck } from 'lucide-react'
 import styles from './page.module.css'
 
-type LoginView = 'roles' | 'student' | 'kitchen' | 'guest'
+type LoginView = 'roles' | 'rider' | 'kitchen' | 'guest'
 
 export default function LoginPage() {
     const [view, setView] = useState<LoginView>('roles')
@@ -137,11 +137,11 @@ export default function LoginPage() {
                                 </div>
                             </button>
 
-                            <button className={styles.premiumCard} onClick={() => handleRoleSelect('student')}>
+                            <button className={styles.premiumCard} onClick={() => handleRoleSelect('rider')}>
                                 <div className={styles.iconCircle}><User size={24} /></div>
                                 <div className={styles.cardText}>
-                                    <h3>Student Portal</h3>
-                                    <p>Access course content & materials</p>
+                                    <h3>Rider Portal</h3>
+                                    <p>Access delivery & operations</p>
                                 </div>
                             </button>
                         </div>
@@ -166,7 +166,7 @@ export default function LoginPage() {
                     </div>
                 )}
 
-                {(view === 'student' || view === 'kitchen') && (
+                {(view === 'rider' || view === 'kitchen') && (
                     <div className={`${styles.authCard} animate-slide-up`}>
                         <button onClick={handleBack} className={styles.backArrow}>
                             <ArrowLeft size={20} />
@@ -174,7 +174,7 @@ export default function LoginPage() {
 
                         <div className={styles.cardHeader}>
                             <h2 className={styles.cardTitle}>
-                                {view === 'kitchen' ? 'Staff Login' : 'Student Login'}
+                                {view === 'kitchen' ? 'Staff Login' : 'Rider Login'}
                             </h2>
                             <p className={styles.cardSubtitle}>
                                 Enter your PIN credentials

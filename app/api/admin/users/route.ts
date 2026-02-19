@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
                 email: userEmail,
                 pin,
                 role,
-                parent_name: role === 'STUDENT' ? parent_name : null
+                parent_name: role === 'RIDER' ? parent_name : null
             })
 
             if (dbError) throw dbError
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
                 name,
                 phone,
                 role,
-                parent_name: role === 'STUDENT' ? parent_name : null
+                parent_name: role === 'RIDER' ? parent_name : null
             }
             if (email) dbPayload.email = email
             if (pin) {
