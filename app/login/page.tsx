@@ -94,7 +94,7 @@ export default function LoginPage() {
             const result = await guestLogin({
                 name: guestName.trim(),
                 phone: guestPhone,
-                table_name: tableName.trim(),
+                table_name: tableName.trim() || 'Walk-in',
                 num_guests: parseInt(numGuests)
             })
 
@@ -257,29 +257,16 @@ export default function LoginPage() {
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                                <div className={styles.inputGroup} style={{ marginBottom: 0 }}>
-                                    <label>TABLE NO</label>
-                                    <input
-                                        type="text"
-                                        placeholder="T1, T2..."
-                                        value={tableName}
-                                        onChange={(e) => setTableName(e.target.value.slice(0, 40))}
-                                        maxLength={40}
-                                        required
-                                    />
-                                </div>
-                                <div className={styles.inputGroup} style={{ marginBottom: 0 }}>
-                                    <label>GUESTS</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="20"
-                                        value={numGuests}
-                                        onChange={(e) => setNumGuests(e.target.value)}
-                                        required
-                                    />
-                                </div>
+                            <div className={styles.inputGroup}>
+                                <label>GUESTS</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="20"
+                                    value={numGuests}
+                                    onChange={(e) => setNumGuests(e.target.value)}
+                                    required
+                                />
                             </div>
 
                             {error && <div className={styles.errorBanner}>{error}</div>}
@@ -288,7 +275,7 @@ export default function LoginPage() {
                                 type="submit"
                                 className={styles.actionButton}
                                 isLoading={loading}
-                                disabled={!guestName.trim() || guestPhone.length < 10 || !tableName.trim()}
+                                disabled={!guestName.trim() || guestPhone.length < 10}
                             >
                                 <Utensils size={18} style={{ marginRight: '8px' }} />
                                 START DINING

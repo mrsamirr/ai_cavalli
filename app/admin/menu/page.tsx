@@ -157,6 +157,15 @@ export default function AdminMenuPage() {
         fetchData()
     }
 
+    async function handleToggleAvailable(id: string, available: boolean) {
+        const { error } = await supabase.from('menu_items').update({ available }).eq('id', id)
+        if (error) {
+            showError('Error updating availability', error.message)
+        } else {
+            setItems(prev => prev.map(item => item.id === id ? { ...item, available } : item))
+        }
+    }
+
     if (dataLoading) return <Loading />
 
     return (
@@ -558,6 +567,7 @@ export default function AdminMenuPage() {
                                         isActive={item.id === editingId}
                                         onEdit={handleEdit}
                                         onDelete={handleDelete}
+                                        onToggleAvailable={handleToggleAvailable}
                                     />
                                 ))}
                             </div>
@@ -617,11 +627,12 @@ function ItalianFormField({ label, icon, ...props }: { label: React.ReactNode; i
     )
 }
 
-function ItalianMenuItemCard({ item, isActive, onEdit, onDelete }: {
+function ItalianMenuItemCard({ item, isActive, onEdit, onDelete, onToggleAvailable }: {
     item: MenuItem;
     isActive: boolean;
     onEdit: (item: MenuItem) => void;
     onDelete: (id: string) => void;
+    onToggleAvailable: (id: string, available: boolean) => void;
 }) {
     return (
         <div style={{
@@ -726,11 +737,52 @@ function ItalianMenuItemCard({ item, isActive, onEdit, onDelete }: {
                     {item.description}
                 </p>
 
+                {/* Availability Toggle */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid rgba(var(--primary-rgb), 0.1)',
+                    marginBottom: '0.75rem'
+                }}>
+                    <span style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: item.available ? '#059669' : '#DC2626'
+                    }}>
+                        {item.available ? 'Available' : 'Unavailable'}
+                    </span>
+                    <div
+                        onClick={() => onToggleAvailable(item.id, !item.available)}
+                        style={{
+                            width: '44px',
+                            height: '24px',
+                            borderRadius: '12px',
+                            background: item.available ? '#059669' : '#ccc',
+                            transition: 'all 0.3s ease',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            flexShrink: 0
+                        }}
+                    >
+                        <div style={{
+                            position: 'absolute',
+                            top: '2px',
+                            left: item.available ? '22px' : '2px',
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: 'white',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                        }} />
+                    </div>
+                </div>
+
                 <div style={{
                     display: 'flex',
                     gap: '10px',
-                    paddingTop: '1.25rem',
-                    borderTop: '1px solid rgba(var(--primary-rgb), 0.1)',
                 }}>
                     <button
                         onClick={() => onEdit(item)}

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { supabase } from '@/lib/database/supabase'
+import { useAuth } from '@/lib/auth/context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loading } from '@/components/ui/Loading'
@@ -32,6 +32,7 @@ interface Announcement {
 }
 
 export default function CMSPage() {
+    const { sessionToken, user: authUser } = useAuth()
     const [news, setNews] = useState<Announcement[]>([])
     const [title, setTitle] = useState('')
     const [desc, setDesc] = useState('')
@@ -42,17 +43,49 @@ export default function CMSPage() {
     const [isMobile, setIsMobile] = useState(false)
 
     useEffect(() => {
-        fetchNews()
+        const hasToken = sessionToken || localStorage.getItem('session_token')
+        const hasUser = authUser?.id || localStorage.getItem('auth_user')
+        if (hasToken || hasUser) fetchNews()
         const checkMobile = () => setIsMobile(window.innerWidth < 1024)
         checkMobile()
         window.addEventListener('resize', checkMobile)
         return () => window.removeEventListener('resize', checkMobile)
-    }, [])
+    }, [sessionToken, authUser])
+
+    function getAuthHeaders(): Record<string, string> {
+        const token = sessionToken || localStorage.getItem('session_token') || ''
+        const userId = authUser?.id || (() => {
+            try {
+                const stored = localStorage.getItem('auth_user')
+                return stored ? JSON.parse(stored).id : ''
+            } catch {
+                return ''
+            }
+        })()
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        }
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        if (userId) headers['X-User-Id'] = userId
+        return headers
+    }
 
     async function fetchNews() {
         setDataLoading(true)
-        const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false })
-        if (data) setNews(data)
+        try {
+            const response = await fetch('/api/admin/announcements', {
+                method: 'GET',
+                headers: getAuthHeaders(),
+                credentials: 'include'
+            })
+            const result = await response.json()
+            if (result.success && result.data) setNews(result.data)
+            else showError('Error loading announcements', result.error || 'Please try again.')
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Please try again.'
+            showError('Error loading announcements', message)
+        }
         setDataLoading(false)
     }
 
@@ -60,22 +93,34 @@ export default function CMSPage() {
         e.preventDefault()
         setLoading(true)
 
-        const { error } = await supabase.from('announcements').insert({
-            title,
-            description: desc,
-            link: linkUrl,
-            image_url: imageUrl,
-            active: true
-        })
+        try {
+            const response = await fetch('/api/admin/announcements', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: 'create',
+                    payload: {
+                        title,
+                        description: desc,
+                        link: linkUrl,
+                        image_url: imageUrl,
+                        active: true
+                    }
+                })
+            })
 
-        if (!error) {
+            const result = await response.json()
+            if (!result.success) throw new Error(result.error || 'Failed to add announcement')
+
             setTitle('')
             setDesc('')
             setLinkUrl('')
             setImageUrl('')
             fetchNews()
-        } else {
-            showError(`Error adding news: ${error.message}`, `"please try again."`)
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Please try again.'
+            showError(`Error adding news: ${message}`, `"please try again."`)
         }
         setLoading(false)
     }
@@ -83,11 +128,22 @@ export default function CMSPage() {
     async function handleDelete(id: string) {
         const confirmed = await showConfirm('Are you sure you want to delete this announcement?', "This action cannot be undone.")
         if (!confirmed) return
-        const { error } = await supabase.from('announcements').delete().eq('id', id)
-        if (!error) {
+        try {
+            const response = await fetch('/api/admin/announcements', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({
+                    action: 'delete',
+                    payload: { id }
+                })
+            })
+            const result = await response.json()
+            if (!result.success) throw new Error(result.error || 'Failed to delete announcement')
             fetchNews()
-        } else {
-            showError(`Error deleting news: ${error.message}`, `"please try again."`)
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Please try again.'
+            showError(`Error deleting news: ${message}`, `"please try again."`)
         }
     }
 
@@ -344,7 +400,7 @@ export default function CMSPage() {
     )
 }
 
-function ItalianFormField({ label, icon, ...props }: { label: React.ReactNode; icon?: React.ReactNode;[x: string]: any; }) {
+function ItalianFormField({ label, icon, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: React.ReactNode; icon?: React.ReactNode }) {
     return (
         <div>
             <label style={{

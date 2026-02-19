@@ -27,6 +27,9 @@ export default function OrdersPage() {
     const [billPreview, setBillPreview] = useState<BillData | null>(null)
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
+    // Track whether we've already triggered auto-logout to avoid double-firing
+    const [autoLogoutTriggered, setAutoLogoutTriggered] = useState(false)
+
     useEffect(() => {
         // If neither user nor orderIdParam, we can't show anything
         if (!user && !orderIdParam) {
@@ -51,7 +54,21 @@ export default function OrdersPage() {
 
             const { data } = await query.order('created_at', { ascending: false })
 
-            if (data) setOrders(data)
+            if (data) {
+                setOrders(data)
+                // Auto-logout guest if all their orders have been billed by kitchen/admin
+                if (
+                    user?.role === 'OUTSIDER' &&
+                    data.length > 0 &&
+                    data.every((o: any) => o.billed === true) &&
+                    !autoLogoutTriggered
+                ) {
+                    setAutoLogoutTriggered(true)
+                    showSuccess('Bill Generated', 'Your bill has been processed by the restaurant. Logging you out...')
+                    clearCart()
+                    setTimeout(() => logout(), 2500)
+                }
+            }
             setLoading(false)
         }
 
@@ -112,6 +129,43 @@ export default function OrdersPage() {
             supabase.removeChannel(channel)
         }
     }, [user, orderIdParam])
+
+    // Separate effect for real-time guest session tracking (billed by kitchen/admin)
+    useEffect(() => {
+        if (
+            !user ||
+            user.role !== 'OUTSIDER' ||
+            !activeSession ||
+            activeSession._virtual ||
+            !activeSession.id ||
+            autoLogoutTriggered
+        ) return
+
+        const sessionChannel = supabase
+            .channel(`session-tracking-${activeSession.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'guest_sessions',
+                    filter: `id=eq.${activeSession.id}`
+                },
+                (payload: any) => {
+                    if (payload.new?.status === 'ended' && !autoLogoutTriggered) {
+                        setAutoLogoutTriggered(true)
+                        showSuccess('Bill Generated', 'Your bill has been processed by the restaurant. Logging you out...')
+                        clearCart()
+                        setTimeout(() => logout(), 2500)
+                    }
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(sessionChannel)
+        }
+    }, [user, activeSession, autoLogoutTriggered])
 
     const handleGetBill = async () => {
         // CASE 1: No orders placed at all
@@ -197,12 +251,21 @@ export default function OrdersPage() {
 
     const handleBillPreviewClose = () => {
         setBillPreview(null)
+        // Auto-logout guest when they dismiss the bill
+        if (user?.role === 'OUTSIDER') {
+            clearCart()
+            setTimeout(() => logout(), 500)
+        }
     }
 
     const handlePrintComplete = () => {
         setBillPreview(null)
-        // Optionally refresh session data
         setActiveSession(null)
+        // Auto-logout guest after billing is complete
+        if (user?.role === 'OUTSIDER') {
+            clearCart()
+            setTimeout(() => logout(), 500)
+        }
     }
 
     return (

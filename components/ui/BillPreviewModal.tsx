@@ -1,74 +1,82 @@
-'use client'
+"use client";
 
-import { useRef, useCallback } from 'react'
-import { X, Printer, Download, Receipt } from 'lucide-react'
-import styles from './BillPreviewModal.module.css'
-import { showError, showSuccess, showConfirm } from '@/components/ui/Popup'
+import { useRef, useCallback } from "react";
+import { X, Printer, Download, Receipt } from "lucide-react";
+import styles from "./BillPreviewModal.module.css";
+import { showError, showSuccess, showConfirm } from "@/components/ui/Popup";
 
 export interface BillItem {
-    item_name: string
-    quantity: number
-    price: number
-    subtotal: number
+  item_name: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
 }
 
 export interface BillData {
-    id?: string
-    billNumber: string
-    guestName?: string
-    tableName?: string
-    items: BillItem[]
-    itemsTotal: number
-    discountAmount?: number
-    finalTotal: number
-    paymentMethod?: string
-    createdAt?: string
-    sessionDetails?: {
-        guestName?: string
-        tableName?: string
-        numGuests?: number
-        orderCount?: number
-        startedAt?: string
-    }
+  id?: string;
+  billNumber: string;
+  guestName?: string;
+  tableName?: string;
+  items: BillItem[];
+  itemsTotal: number;
+  discountAmount?: number;
+  finalTotal: number;
+  paymentMethod?: string;
+  createdAt?: string;
+  sessionDetails?: {
+    guestName?: string;
+    tableName?: string;
+    numGuests?: number;
+    orderCount?: number;
+    startedAt?: string;
+  };
 }
 
 interface BillPreviewModalProps {
-    bill: BillData
-    onClose: () => void
-    onPrintComplete?: () => void
+  bill: BillData;
+  onClose: () => void;
+  onPrintComplete?: () => void;
 }
 
-export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreviewModalProps) {
-    const receiptRef = useRef<HTMLDivElement>(null)
+export function BillPreviewModal({
+  bill,
+  onClose,
+  onPrintComplete,
+}: BillPreviewModalProps) {
+  const receiptRef = useRef<HTMLDivElement>(null);
 
-    const now = bill.createdAt ? new Date(bill.createdAt) : new Date()
-    const dateStr = now.toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-    })
-    const timeStr = now.toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    })
+  const now = bill.createdAt ? new Date(bill.createdAt) : new Date();
+  const dateStr = now.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  const timeStr = now.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
 
-    const guestName = bill.sessionDetails?.guestName || bill.guestName || ''
-    const tableName = bill.sessionDetails?.tableName || bill.tableName || ''
-    const orderCount = bill.sessionDetails?.orderCount
-    const numGuests = bill.sessionDetails?.numGuests
+  const guestName = bill.sessionDetails?.guestName || bill.guestName || "";
+  const tableName = bill.sessionDetails?.tableName || bill.tableName || "";
+  const orderCount = bill.sessionDetails?.orderCount;
+  const numGuests = bill.sessionDetails?.numGuests;
 
-    // Build the receipt HTML for print/PDF
-    const buildPrintHTML = useCallback(() => {
-        const itemsHTML = bill.items.map(item => `
+  // Build the receipt HTML for print/PDF
+  const buildPrintHTML = useCallback(() => {
+    const itemsHTML = bill.items
+      .map(
+        (item) => `
             <tr>
                 <td style="text-align:left;padding:6px 0;"><b>${item.item_name}</b></td>
                 <td style="text-align:center;padding:6px 0;"><b>${item.quantity}</b></td>
                 <td style="text-align:right;padding:6px 0;"><b>₹${item.subtotal.toFixed(2)}</b></td>
             </tr>
-        `).join('')
+        `,
+      )
+      .join("");
 
-        return `
+    return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -80,9 +88,9 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Arial Black', 'Arial Bold', Arial, Helvetica, sans-serif;
-            font-size: 16px;
-            font-weight: 900;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            font-weight: 700;
             width: 80mm;
             max-width: 80mm;
             padding: 4mm;
@@ -96,13 +104,12 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
         b, strong { font-weight: 900; }
         .center { text-align: center; }
         .restaurant-name {
-            font-size: 28px;
-            font-weight: 900;
-            letter-spacing: 3px;
-            color: #000000;
-            -webkit-text-stroke: 1.5px #000000;
-            text-shadow: 0 0 1px #000, 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000;
-        }
+    font-family: "Times New Roman", Times, serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
         .subtitle {
             font-size: 14px;
             color: #000000;
@@ -175,17 +182,27 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
 </head>
 <body>
     <div class="center">
-        <div class="restaurant-name"><b>AI CAVALLI</b></div>
-        <div class="subtitle"><b>RESTAURANT & CAFE</b></div>
+    <div class="restaurant-name">AI CAVALLI</div>
+    <div style="margin-top:4px;">
+        Embassy Projects Pvt Ltd<br/>
+        Embassy Point, Infantry Road<br/>
+        Bangalore - 560001<br/>
+        Phone: 080-43418451/2<br/>
+        Mobile: 7353779533<br/>
+        GSTIN: 29AAACE8809Q1ZW
     </div>
+</div>
+
     <hr>
     <div class="info"><b>Bill No:</b><b>${bill.billNumber}</b></div>
     <div class="info"><b>Date:</b><b>${dateStr}</b></div>
     <div class="info"><b>Time:</b><b>${timeStr}</b></div>
-    ${tableName ? `<div class="info"><b>Table:</b><b>${tableName}</b></div>` : ''}
-    ${guestName ? `<div class="info"><b>Guest:</b><b>${guestName}</b></div>` : ''}
-    ${numGuests ? `<div class="info"><b>Guests:</b><b>${numGuests}</b></div>` : ''}
-    ${orderCount ? `<div class="info"><b>Orders:</b><b>${orderCount}</b></div>` : ''}
+    ${tableName ? `<div class="info"><b>Table:</b><b>${tableName}</b></div>` : ""}
+    ${guestName ? `<div class="info"><b>Guest:</b><b>${guestName}</b></div>` : ""}
+    ${numGuests ? `<div class="info"><b>Guests:</b><b>${numGuests}</b></div>` : ""}
+    ${orderCount ? `<div class="info"><b>Orders:</b><b>${orderCount}</b></div>` : ""}
+    <hr>
+    <div class="info"><b>Attended By:</b><b>Anand</b></div>
     <hr>
     <table>
         <thead>
@@ -201,60 +218,63 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
     </table>
     <hr>
     <div class="total-row"><b>Subtotal:</b><b>₹${bill.itemsTotal.toFixed(2)}</b></div>
-    ${bill.discountAmount && bill.discountAmount > 0 ? `<div class="total-row"><b>Discount:</b><b>-₹${bill.discountAmount.toFixed(2)}</b></div>` : ''}
+    ${bill.discountAmount && bill.discountAmount > 0 ? `<div class="total-row"><b>Discount:</b><b>-₹${bill.discountAmount.toFixed(2)}</b></div>` : ""}
     <hr>
     <div class="grand-total"><b>TOTAL:</b><b>₹${bill.finalTotal.toFixed(2)}</b></div>
-    ${bill.paymentMethod ? `<div class="total-row"><b>Payment:</b><b>${bill.paymentMethod.toUpperCase()}</b></div>` : ''}
+    ${bill.paymentMethod ? `<div class="total-row"><b>Payment:</b><b>${bill.paymentMethod.toUpperCase()}</b></div>` : ""}
     <hr>
     <div class="footer">
         <div class="thank-you"><b>Thank You! Visit Again!</b></div>
         <div style="margin-top:4px;"><b>Powered by AI Cavalli</b></div>
     </div>
 </body>
-</html>`
-    }, [bill, dateStr, timeStr, guestName, tableName, numGuests, orderCount])
+</html>`;
+  }, [bill, dateStr, timeStr, guestName, tableName, numGuests, orderCount]);
 
-    // Open browser print dialog (works for both printing and saving as PDF via browser)
-    const handlePrint = useCallback(() => {
-        const printWindow = window.open('', '_blank', 'width=350,height=700')
-        if (!printWindow) {
-            showError('Popup Blocked', 'Please allow popups to print the bill.')
-            return
-        }
+  // Open browser print dialog (works for both printing and saving as PDF via browser)
+  const handlePrint = useCallback(() => {
+    const printWindow = window.open("", "_blank", "width=350,height=700");
+    if (!printWindow) {
+      showError("Popup Blocked", "Please allow popups to print the bill.");
+      return;
+    }
 
-        printWindow.document.write(buildPrintHTML())
-        printWindow.document.close()
+    printWindow.document.write(buildPrintHTML());
+    printWindow.document.close();
 
-        printWindow.onload = () => {
-            printWindow.focus()
-            printWindow.print()
-            printWindow.onafterprint = () => {
-                printWindow.close()
-                onPrintComplete?.()
-            }
-        }
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.onafterprint = () => {
+        printWindow.close();
+        onPrintComplete?.();
+      };
+    };
 
-        // Fallback for browsers without onafterprint
-        setTimeout(() => {
-            if (!printWindow.closed) {
-                printWindow.focus()
-                printWindow.print()
-            }
-        }, 600)
-    }, [buildPrintHTML, onPrintComplete])
+    // Fallback for browsers without onafterprint
+    setTimeout(() => {
+      if (!printWindow.closed) {
+        printWindow.focus();
+        printWindow.print();
+      }
+    }, 600);
+  }, [buildPrintHTML, onPrintComplete]);
 
-    // Save as PDF: Opens print dialog with instructions to select "Save as PDF"
-    const handleSavePDF = useCallback(() => {
-        const printWindow = window.open('', '_blank', 'width=350,height=700')
-        if (!printWindow) {
-            showError('Popup Blocked', 'Please allow popups to save the bill as PDF.')
-            return
-        }
+  // Save as PDF: Opens print dialog with instructions to select "Save as PDF"
+  const handleSavePDF = useCallback(() => {
+    const printWindow = window.open("", "_blank", "width=350,height=700");
+    if (!printWindow) {
+      showError(
+        "Popup Blocked",
+        "Please allow popups to save the bill as PDF.",
+      );
+      return;
+    }
 
-        // Add a hint banner for Save as PDF
-        const htmlContent = buildPrintHTML().replace(
-            '</body>',
-            `<div id="pdf-hint" style="
+    // Add a hint banner for Save as PDF
+    const htmlContent = buildPrintHTML().replace(
+      "</body>",
+      `<div id="pdf-hint" style="
                 position:fixed;top:0;left:0;right:0;
                 background:#C0272D;color:white;
                 text-align:center;padding:8px;
@@ -269,213 +289,226 @@ export function BillPreviewModal({ bill, onClose, onPrintComplete }: BillPreview
                     if (hint) hint.remove();
                 };
             </script>
-            </body>`
-        )
+            </body>`,
+    );
 
-        printWindow.document.write(htmlContent)
-        printWindow.document.close()
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
 
-        printWindow.onload = () => {
-            printWindow.focus()
-            printWindow.print()
-            printWindow.onafterprint = () => {
-                printWindow.close()
-            }
-        }
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+    };
 
-        setTimeout(() => {
-            if (!printWindow.closed) {
-                printWindow.focus()
-                printWindow.print()
-            }
-        }, 600)
-    }, [buildPrintHTML])
+    setTimeout(() => {
+      if (!printWindow.closed) {
+        printWindow.focus();
+        printWindow.print();
+      }
+    }, 600);
+  }, [buildPrintHTML]);
 
-    // Send to thermal printer via local print server
-    const handleThermalPrint = useCallback(async () => {
-        try {
-            // Try local printer server first (for ESSAE PR-85 or similar)
-            const response = await fetch('http://localhost:4000/print', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    billNumber: bill.billNumber,
-                    tableName,
-                    guestName,
-                    items: bill.items,
-                    itemsTotal: bill.itemsTotal,
-                    discountAmount: bill.discountAmount || 0,
-                    finalTotal: bill.finalTotal,
-                    paymentMethod: bill.paymentMethod || 'CASH',
-                    sessionDetails: bill.sessionDetails
-                })
-            })
+  // Send to thermal printer via local print server
+  const handleThermalPrint = useCallback(async () => {
+    try {
+      // Try local printer server first (for ESSAE PR-85 or similar)
+      const response = await fetch("http://localhost:4000/print", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          billNumber: bill.billNumber,
+          tableName,
+          guestName,
+          items: bill.items,
+          itemsTotal: bill.itemsTotal,
+          discountAmount: bill.discountAmount || 0,
+          finalTotal: bill.finalTotal,
+          paymentMethod: bill.paymentMethod || "CASH",
+          sessionDetails: bill.sessionDetails,
+        }),
+      });
 
-            const data = await response.json()
-            if (data.success) {
-                showSuccess('Printed!', 'Bill sent to thermal printer.')
-                onPrintComplete?.()
-            } else {
-                throw new Error(data.error || 'Printer error')
-            }
-        } catch (error: any) {
-            // Fallback to browser print if printer server isn't running
-            const useBrowserPrint = await showConfirm(
-                'Printer Unavailable',
-                `${error.message || 'Could not connect to printer server.'} Use browser print instead?`,
-                'Browser Print',
-                'Cancel'
-            )
-            if (useBrowserPrint) {
-                handlePrint()
-            }
-        }
-    }, [bill, tableName, guestName, handlePrint, onPrintComplete])
-
-    // Close on overlay click
-    const handleOverlayClick = (e: React.MouseEvent) => {
-        if (e.target === e.currentTarget) onClose()
+      const data = await response.json();
+      if (data.success) {
+        showSuccess("Printed!", "Bill sent to thermal printer.");
+        onPrintComplete?.();
+      } else {
+        throw new Error(data.error || "Printer error");
+      }
+    } catch (error: any) {
+      // Fallback to browser print if printer server isn't running
+      const useBrowserPrint = await showConfirm(
+        "Printer Unavailable",
+        `${error.message || "Could not connect to printer server."} Use browser print instead?`,
+        "Browser Print",
+        "Cancel",
+      );
+      if (useBrowserPrint) {
+        handlePrint();
+      }
     }
+  }, [bill, tableName, guestName, handlePrint, onPrintComplete]);
 
-    return (
-        <div className={styles.overlay} onClick={handleOverlayClick}>
-            <div className={styles.modal}>
-                {/* Header */}
-                <div className={styles.header}>
-                    <h2>
-                        <Receipt size={20} />
-                        Bill Preview
-                    </h2>
-                    <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
-                        <X size={20} />
-                    </button>
-                </div>
+  // Close on overlay click
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) onClose();
+  };
 
-                {/* Receipt Preview */}
-                <div className={styles.billContent}>
-                    <div className={styles.receipt} ref={receiptRef}>
-                        {/* Restaurant Header */}
-                        <div className={styles.receiptHeader}>
-                            <h3>AI CAVALLI</h3>
-                            <p>RESTAURANT & CAFE</p>
-                        </div>
-
-                        <hr className={styles.divider} />
-
-                        {/* Bill Info */}
-                        <div className={styles.infoRow}>
-                            <span>Bill No:</span>
-                            <span>{bill.billNumber}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span>Date:</span>
-                            <span>{dateStr}</span>
-                        </div>
-                        <div className={styles.infoRow}>
-                            <span>Time:</span>
-                            <span>{timeStr}</span>
-                        </div>
-                        {tableName && (
-                            <div className={styles.infoRow}>
-                                <span>Table:</span>
-                                <span>{tableName}</span>
-                            </div>
-                        )}
-                        {guestName && (
-                            <div className={styles.infoRow}>
-                                <span>Guest:</span>
-                                <span>{guestName}</span>
-                            </div>
-                        )}
-                        {numGuests && (
-                            <div className={styles.infoRow}>
-                                <span>Guests:</span>
-                                <span>{numGuests}</span>
-                            </div>
-                        )}
-                        {orderCount && (
-                            <div className={styles.infoRow}>
-                                <span>Orders:</span>
-                                <span>{orderCount}</span>
-                            </div>
-                        )}
-
-                        <hr className={styles.divider} />
-
-                        {/* Items Header */}
-                        <div className={styles.itemsHeader}>
-                            <span>Item</span>
-                            <span>Qty</span>
-                            <span>Amt</span>
-                        </div>
-
-                        {/* Items */}
-                        {bill.items.map((item, index) => (
-                            <div key={index} className={styles.itemRow}>
-                                <span>{item.item_name}</span>
-                                <span>{item.quantity}</span>
-                                <span>₹{item.subtotal.toFixed(2)}</span>
-                            </div>
-                        ))}
-
-                        <hr className={styles.divider} />
-
-                        {/* Totals */}
-                        <div className={styles.totalSection}>
-                            <div className={styles.totalRow}>
-                                <span>Subtotal:</span>
-                                <span>₹{bill.itemsTotal.toFixed(2)}</span>
-                            </div>
-                            {bill.discountAmount != null && bill.discountAmount > 0 && (
-                                <div className={`${styles.totalRow} ${styles.discount}`}>
-                                    <span>Discount:</span>
-                                    <span>-₹{bill.discountAmount.toFixed(2)}</span>
-                                </div>
-                            )}
-                        </div>
-
-                        <hr className={styles.divider} />
-
-                        <div className={styles.grandTotal}>
-                            <span>TOTAL:</span>
-                            <span>₹{bill.finalTotal.toFixed(2)}</span>
-                        </div>
-
-                        {bill.paymentMethod && (
-                            <div className={styles.infoRow}>
-                                <span>Payment:</span>
-                                <span>{bill.paymentMethod.toUpperCase()}</span>
-                            </div>
-                        )}
-
-                        <hr className={styles.divider} />
-
-                        {/* Footer */}
-                        <div className={styles.receiptFooter}>
-                            <p className={styles.thankYou}>Thank You! Visit Again!</p>
-                            <p>Powered by AI Cavalli</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Actions */}
-                <div className={styles.actions}>
-                    <button className={styles.printBtn} onClick={handlePrint}>
-                        <Printer size={20} />
-                        Print Bill
-                    </button>
-                    <div className={styles.secondaryActions}>
-                        <button className={styles.savePdfBtn} onClick={handleSavePDF}>
-                            <Download size={18} />
-                            Save as PDF
-                        </button>
-                        <button className={styles.thermalPrintBtn} onClick={handleThermalPrint}>
-                            <Receipt size={18} />
-                            Thermal Print
-                        </button>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className={styles.overlay} onClick={handleOverlayClick}>
+      <div className={styles.modal}>
+        {/* Header */}
+        <div className={styles.header}>
+          <h2>
+            <Receipt size={20} />
+            Bill Preview
+          </h2>
+          <button
+            className={styles.closeBtn}
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
         </div>
-    )
+
+        {/* Receipt Preview */}
+        <div className={styles.billContent}>
+          <div className={styles.receipt} ref={receiptRef}>
+            {/* Restaurant Header */}
+            <div className={styles.receiptHeader}>
+              <h3>AI CAVALLI</h3>
+              <p>RESTAURANT & CAFE</p>
+            </div>
+
+            <hr className={styles.divider} />
+
+            {/* Bill Info */}
+            <div className={styles.infoRow}>
+              <span>Bill No:</span>
+              <span>{bill.billNumber}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span>Date:</span>
+              <span>{dateStr}</span>
+            </div>
+            <div className={styles.infoRow}>
+              <span>Time:</span>
+              <span>{timeStr}</span>
+            </div>
+            {tableName && (
+              <div className={styles.infoRow}>
+                <span>Table:</span>
+                <span>{tableName}</span>
+              </div>
+            )}
+            {guestName && (
+              <div className={styles.infoRow}>
+                <span>Guest:</span>
+                <span>{guestName}</span>
+              </div>
+            )}
+            {numGuests && (
+              <div className={styles.infoRow}>
+                <span>Guests:</span>
+                <span>{numGuests}</span>
+              </div>
+            )}
+            {orderCount && (
+              <div className={styles.infoRow}>
+                <span>Orders:</span>
+                <span>{orderCount}</span>
+              </div>
+            )}
+
+            <hr className={styles.divider} />
+            <div className={styles.infoRow}>
+              <span>Attended By:</span>
+              <span>Anand</span>
+            </div>
+
+            <hr className={styles.divider} />
+
+            {/* Items Header */}
+            <div className={styles.itemsHeader}>
+              <span>Item</span>
+              <span>Qty</span>
+              <span>Amt</span>
+            </div>
+
+            {/* Items */}
+            {bill.items.map((item, index) => (
+              <div key={index} className={styles.itemRow}>
+                <span>{item.item_name}</span>
+                <span>{item.quantity}</span>
+                <span>₹{item.subtotal.toFixed(2)}</span>
+              </div>
+            ))}
+
+            <hr className={styles.divider} />
+
+            {/* Totals */}
+            <div className={styles.totalSection}>
+              <div className={styles.totalRow}>
+                <span>Subtotal:</span>
+                <span>₹{bill.itemsTotal.toFixed(2)}</span>
+              </div>
+              {bill.discountAmount != null && bill.discountAmount > 0 && (
+                <div className={`${styles.totalRow} ${styles.discount}`}>
+                  <span>Discount:</span>
+                  <span>-₹{bill.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+
+            <hr className={styles.divider} />
+
+            <div className={styles.grandTotal}>
+              <span>TOTAL:</span>
+              <span>₹{bill.finalTotal.toFixed(2)}</span>
+            </div>
+
+            {bill.paymentMethod && (
+              <div className={styles.infoRow}>
+                <span>Payment:</span>
+                <span>{bill.paymentMethod.toUpperCase()}</span>
+              </div>
+            )}
+
+            <hr className={styles.divider} />
+
+            {/* Footer */}
+            <div className={styles.receiptFooter}>
+              <p className={styles.thankYou}>Thank You! Visit Again!</p>
+              <p>Powered by AI Cavalli</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className={styles.actions}>
+          <button className={styles.printBtn} onClick={handlePrint}>
+            <Printer size={20} />
+            Print Bill
+          </button>
+          <div className={styles.secondaryActions}>
+            <button className={styles.savePdfBtn} onClick={handleSavePDF}>
+              <Download size={18} />
+              Save as PDF
+            </button>
+            <button
+              className={styles.thermalPrintBtn}
+              onClick={handleThermalPrint}
+            >
+              <Receipt size={18} />
+              Thermal Print
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

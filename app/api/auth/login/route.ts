@@ -110,9 +110,8 @@ export async function POST(request: NextRequest) {
             if (!name?.trim()) {
                 return NextResponse.json({ success: false, error: 'Name is required' }, { status: 400 })
             }
-            if (!table_name?.trim()) {
-                return NextResponse.json({ success: false, error: 'Table number is required' }, { status: 400 })
-            }
+            // Table name is now optional — default to 'Walk-in'
+            const finalTableName = table_name?.trim() || 'Walk-in'
 
             const admin = getAdminClient()
 
@@ -190,7 +189,7 @@ export async function POST(request: NextRequest) {
                     const { data: updatedSession } = await admin
                         .from('guest_sessions')
                         .update({
-                            table_name: table_name.trim(),
+                            table_name: finalTableName,
                             num_guests: parseInt(num_guests || '1'),
                             guest_name: name.trim(),
                             user_id: guestUser.id
@@ -206,7 +205,7 @@ export async function POST(request: NextRequest) {
                             user_id: guestUser.id,
                             guest_name: name.trim(),
                             guest_phone: sanitizedPhone,
-                            table_name: table_name.trim(),
+                            table_name: finalTableName,
                             num_guests: parseInt(num_guests || '1'),
                             status: 'active',
                             total_amount: 0
@@ -225,7 +224,7 @@ export async function POST(request: NextRequest) {
             }
             const sessionToken = generateSessionToken()
             await updateSessionToken(guestUser.id, sessionToken, 24)
-            await logAuthAction(guestUser.id, 'guest_login', { table_name, num_guests })
+            await logAuthAction(guestUser.id, 'guest_login', { table_name: finalTableName, num_guests })
 
             const safeUser = {
                 id: guestUser.id,

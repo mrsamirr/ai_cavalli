@@ -175,7 +175,10 @@ export default function KitchenPage() {
                         }
                         const newOrder = await fetchSingleOrder(payload.new.id)
                         if (newOrder && ['pending', 'preparing', 'ready'].includes(newOrder.status)) {
-                            setOrders(prev => [newOrder, ...prev])
+                            setOrders(prev => {
+                                if (prev.some(o => o.id === newOrder.id)) return prev
+                                return [newOrder, ...prev]
+                            })
                         }
                     } else if (payload.eventType === 'UPDATE') {
                         const updated = await fetchSingleOrder(payload.new.id)
