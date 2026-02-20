@@ -25,7 +25,7 @@ export interface BillData {
   createdAt?: string;
   sessionDetails?: {
     guestName?: string;
-    tableName?: string;
+    // tableName?: string;
     numGuests?: number;
     orderCount?: number;
     startedAt?: string;
@@ -36,13 +36,16 @@ interface BillPreviewModalProps {
   bill: BillData;
   onClose: () => void;
   onPrintComplete?: () => void;
+  userRole?: string;
 }
 
 export function BillPreviewModal({
   bill,
   onClose,
   onPrintComplete,
+  userRole,
 }: BillPreviewModalProps) {
+  const showPrintActions = userRole !== 'OUTSIDER' && userRole !== 'RIDER';
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const now = bill.createdAt ? new Date(bill.createdAt) : new Date();
@@ -58,7 +61,7 @@ export function BillPreviewModal({
   });
 
   const guestName = bill.sessionDetails?.guestName || bill.guestName || "";
-  const tableName = bill.sessionDetails?.tableName || bill.tableName || "";
+  // const tableName = bill.sessionDetails?.tableName || bill.tableName || "";
   const orderCount = bill.sessionDetails?.orderCount;
   const numGuests = bill.sessionDetails?.numGuests;
 
@@ -70,7 +73,7 @@ export function BillPreviewModal({
             <tr>
                 <td style="text-align:left;padding:6px 0;"><b>${item.item_name}</b></td>
                 <td style="text-align:center;padding:6px 0;"><b>${item.quantity}</b></td>
-                <td style="text-align:right;padding:6px 0;"><b>₹${item.subtotal.toFixed(2)}</b></td>
+                <td style="text-align:right;padding:6px 0;"><b>₹${(item.subtotal || 0).toFixed(2)}</b></td>
             </tr>
         `,
       )
@@ -197,9 +200,7 @@ export function BillPreviewModal({
     <div class="info"><b>Bill No:</b><b>${bill.billNumber}</b></div>
     <div class="info"><b>Date:</b><b>${dateStr}</b></div>
     <div class="info"><b>Time:</b><b>${timeStr}</b></div>
-    ${tableName ? `<div class="info"><b>Table:</b><b>${tableName}</b></div>` : ""}
     ${guestName ? `<div class="info"><b>Guest:</b><b>${guestName}</b></div>` : ""}
-    ${numGuests ? `<div class="info"><b>Guests:</b><b>${numGuests}</b></div>` : ""}
     ${orderCount ? `<div class="info"><b>Orders:</b><b>${orderCount}</b></div>` : ""}
     <hr>
     <div class="info"><b>Attended By:</b><b>Anand</b></div>
@@ -217,10 +218,10 @@ export function BillPreviewModal({
         </tbody>
     </table>
     <hr>
-    <div class="total-row"><b>Subtotal:</b><b>₹${bill.itemsTotal.toFixed(2)}</b></div>
-    ${bill.discountAmount && bill.discountAmount > 0 ? `<div class="total-row"><b>Discount:</b><b>-₹${bill.discountAmount.toFixed(2)}</b></div>` : ""}
+    <div class="total-row"><b>Subtotal:</b><b>₹${(bill.itemsTotal || 0).toFixed(2)}</b></div>
+    ${bill.discountAmount && bill.discountAmount > 0 ? `<div class="total-row"><b>Discount:</b><b>-₹${(bill.discountAmount || 0).toFixed(2)}</b></div>` : ""}
     <hr>
-    <div class="grand-total"><b>TOTAL:</b><b>₹${bill.finalTotal.toFixed(2)}</b></div>
+    <div class="grand-total"><b>TOTAL:</b><b>₹${(bill.finalTotal || 0).toFixed(2)}</b></div>
     ${bill.paymentMethod ? `<div class="total-row"><b>Payment:</b><b>${bill.paymentMethod.toUpperCase()}</b></div>` : ""}
     <hr>
     <div class="footer">
@@ -229,7 +230,7 @@ export function BillPreviewModal({
     </div>
 </body>
 </html>`;
-  }, [bill, dateStr, timeStr, guestName, tableName, numGuests, orderCount]);
+  }, [bill, dateStr, timeStr, guestName, numGuests, orderCount]);
 
   // Open browser print dialog (works for both printing and saving as PDF via browser)
   const handlePrint = useCallback(() => {
@@ -320,7 +321,7 @@ export function BillPreviewModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           billNumber: bill.billNumber,
-          tableName,
+          // tableName,
           guestName,
           items: bill.items,
           itemsTotal: bill.itemsTotal,
@@ -350,7 +351,7 @@ export function BillPreviewModal({
         handlePrint();
       }
     }
-  }, [bill, tableName, guestName, handlePrint, onPrintComplete]);
+  }, [bill, guestName, handlePrint, onPrintComplete]);
 
   // Close on overlay click
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -381,7 +382,14 @@ export function BillPreviewModal({
             {/* Restaurant Header */}
             <div className={styles.receiptHeader}>
               <h3>AI CAVALLI</h3>
-              <p>RESTAURANT & CAFE</p>
+              <p style={{ fontSize: '0.75rem', color: '#000', fontWeight: 700, marginTop: '4px', lineHeight: 1.4 }}>
+                Embassy Projects Pvt Ltd<br />
+                Embassy Point, Infantry Road<br />
+                Bangalore - 560001<br />
+                Phone: 080-43418451/2<br />
+                Mobile: 7353779533<br />
+                GSTIN: 29AAACE8809Q1ZW
+              </p>
             </div>
 
             <hr className={styles.divider} />
@@ -399,24 +407,19 @@ export function BillPreviewModal({
               <span>Time:</span>
               <span>{timeStr}</span>
             </div>
-            {tableName && (
+            {/* {tableName && (
               <div className={styles.infoRow}>
                 <span>Table:</span>
                 <span>{tableName}</span>
               </div>
-            )}
+            )} */}
             {guestName && (
               <div className={styles.infoRow}>
                 <span>Guest:</span>
                 <span>{guestName}</span>
               </div>
             )}
-            {numGuests && (
-              <div className={styles.infoRow}>
-                <span>Guests:</span>
-                <span>{numGuests}</span>
-              </div>
-            )}
+          
             {orderCount && (
               <div className={styles.infoRow}>
                 <span>Orders:</span>
@@ -444,7 +447,7 @@ export function BillPreviewModal({
               <div key={index} className={styles.itemRow}>
                 <span>{item.item_name}</span>
                 <span>{item.quantity}</span>
-                <span>₹{item.subtotal.toFixed(2)}</span>
+                <span>₹{(item.subtotal || 0).toFixed(2)}</span>
               </div>
             ))}
 
@@ -454,12 +457,12 @@ export function BillPreviewModal({
             <div className={styles.totalSection}>
               <div className={styles.totalRow}>
                 <span>Subtotal:</span>
-                <span>₹{bill.itemsTotal.toFixed(2)}</span>
+                <span>₹{(bill.itemsTotal || 0).toFixed(2)}</span>
               </div>
               {bill.discountAmount != null && bill.discountAmount > 0 && (
                 <div className={`${styles.totalRow} ${styles.discount}`}>
                   <span>Discount:</span>
-                  <span>-₹{bill.discountAmount.toFixed(2)}</span>
+                  <span>-₹{(bill.discountAmount || 0).toFixed(2)}</span>
                 </div>
               )}
             </div>
@@ -468,7 +471,7 @@ export function BillPreviewModal({
 
             <div className={styles.grandTotal}>
               <span>TOTAL:</span>
-              <span>₹{bill.finalTotal.toFixed(2)}</span>
+              <span>₹{(bill.finalTotal || 0).toFixed(2)}</span>
             </div>
 
             {bill.paymentMethod && (
@@ -489,25 +492,27 @@ export function BillPreviewModal({
         </div>
 
         {/* Actions */}
-        <div className={styles.actions}>
-          <button className={styles.printBtn} onClick={handlePrint}>
-            <Printer size={20} />
-            Print Bill
-          </button>
-          <div className={styles.secondaryActions}>
-            <button className={styles.savePdfBtn} onClick={handleSavePDF}>
-              <Download size={18} />
-              Save as PDF
+        {showPrintActions && (
+          <div className={styles.actions}>
+            <button className={styles.printBtn} onClick={handlePrint}>
+              <Printer size={20} />
+              Print Bill
             </button>
-            <button
-              className={styles.thermalPrintBtn}
-              onClick={handleThermalPrint}
-            >
-              <Receipt size={18} />
-              Thermal Print
-            </button>
+            <div className={styles.secondaryActions}>
+              <button className={styles.savePdfBtn} onClick={handleSavePDF}>
+                <Download size={18} />
+                Save as PDF
+              </button>
+              <button
+                className={styles.thermalPrintBtn}
+                onClick={handleThermalPrint}
+              >
+                <Receipt size={18} />
+                Thermal Print
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

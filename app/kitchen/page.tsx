@@ -966,6 +966,7 @@ export default function KitchenPage() {
                 <BillPreviewModal
                     bill={billPreview}
                     onClose={() => setBillPreview(null)}
+                    userRole={user?.role}
                 />
             )}
 
