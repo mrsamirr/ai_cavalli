@@ -83,7 +83,7 @@ export function BillPreviewModal({
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Bill ${bill.billNumber} - AI Cavalli</title>
+    <title>Bill ${bill.billNumber} - Ai Cavalli</title>
     <style>
         @page {
             size: 80mm auto;
@@ -185,7 +185,7 @@ export function BillPreviewModal({
 </head>
 <body>
     <div class="center">
-    <div class="restaurant-name">AI CAVALLI</div>
+    <div class="restaurant-name">Ai CAVALLI</div>
     <div style="margin-top:4px;">
         Embassy Projects Pvt Ltd<br/>
         Embassy Point, Infantry Road<br/>
@@ -226,7 +226,7 @@ export function BillPreviewModal({
     <hr>
     <div class="footer">
         <div class="thank-you"><b>Thank You! Visit Again!</b></div>
-        <div style="margin-top:4px;"><b>Powered by AI Cavalli</b></div>
+        <div style="margin-top:4px;"><b>Powered by Ai Cavalli</b></div>
     </div>
 </body>
 </html>`;

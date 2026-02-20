@@ -367,48 +367,53 @@ export function MenuItemSelector({
           />
         </div>
 
-        {/* Categories */}
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--space-2)",
-            padding: "var(--space-3) var(--space-4)",
-            borderBottom: "1px solid var(--border)",
-            overflowX: "auto",
-            backgroundColor: "white",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-          }}
-        >
-          <CategoryBadge
-            name="All"
-            isActive={activeCategory === "all"}
-            onClick={() => setActiveCategory("all")}
-          />
-          {displayedCategories.map((cat) => (
-            <CategoryBadge
-              key={cat.id}
-              name={cat.name}
-              isActive={activeCategory === cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-            />
-          ))}
-        </div>
-
-        {/* Content */}
         <div
           style={{
             flex: 1,
             overflowY: "auto",
             overflowX: "hidden",
-            padding: "var(--space-3)",
             backgroundColor: "#FAFAF8",
           }}
         >
-          {renderItemsContent()}
+          {/* Categories */}
+          <div
+            style={{
+              display: "flex",
+              gap: "var(--space-2)",
+              padding: "var(--space-3) var(--space-4)",
+              borderBottom: "1px solid var(--border)",
+              overflowX: "auto",
+              backgroundColor: "white",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              position: "sticky",
+              top: 0,
+              zIndex: 20,
+            }}
+          >
+            <CategoryBadge
+              name="All"
+              isActive={activeCategory === "all"}
+              onClick={() => setActiveCategory("all")}
+            />
+            {displayedCategories.map((cat) => (
+              <CategoryBadge
+                key={cat.id}
+                name={cat.name}
+                isActive={activeCategory === cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+              />
+            ))}
+          </div>
+
+          {/* Content */}
+          <div
+            style={{
+              padding: "var(--space-3)",
+            }}
+          >
+            {renderItemsContent()}
+          </div>
         </div>
       </div>
 
