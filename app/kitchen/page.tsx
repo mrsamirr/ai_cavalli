@@ -76,6 +76,7 @@ export default function KitchenPage() {
     const [categories, setCategories] = useState<any[]>([])
     const [generatingBill, setGeneratingBill] = useState<string | null>(null)
     const [printingBill, setPrintingBill] = useState<string | null>(null)
+    const [reprintingBill, setReprintingBill] = useState<string | null>(null)
     const [billData, setBillData] = useState<any>(null)
     const [billRequests, setBillRequests] = useState<any[]>([])
     const [showMenuSelector, setShowMenuSelector] = useState(false)
@@ -457,6 +458,50 @@ export default function KitchenPage() {
             console.error(error)
             showError('Error', 'Failed to print bill')
         } finally { setPrintingBill(null) }
+    }
+
+    async function handleReprintBill(orderId: string) {
+        setReprintingBill(orderId)
+        try {
+            // Fetch the bill associated with this order
+            const { data: bills, error } = await supabase
+                .from('bills')
+                .select('*, bill_items(*)')
+                .eq('order_id', orderId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+
+            if (error || !bills || bills.length === 0) {
+                showError('Bill Not Found', 'Could not find a bill for this order.')
+                return
+            }
+
+            const bill = bills[0]
+            const order = [...orders, ...completedOrders].find(o => o.id === orderId)
+
+            // Show bill preview modal for reprinting
+            setBillPreview({
+                id: bill.id,
+                billNumber: bill.bill_number || '',
+                tableName: bill.session_details?.tableName || order?.table_name || '',
+                guestName: order?.guest_info?.name || order?.user?.name || '',
+                items: (bill.bill_items || []).map((i: any) => ({
+                    item_name: i.item_name || i.name || '',
+                    quantity: i.quantity,
+                    price: i.unit_price || i.price,
+                    subtotal: i.subtotal || (i.quantity * (i.unit_price || i.price))
+                })),
+                itemsTotal: bill.items_total || 0,
+                discountAmount: bill.discount_amount || 0,
+                finalTotal: bill.final_total || 0,
+                paymentMethod: bill.payment_method || 'cash',
+            })
+        } catch (error) {
+            console.error(error)
+            showError('Error', 'Failed to fetch bill for reprinting')
+        } finally {
+            setReprintingBill(null)
+        }
     }
 
     async function addItemToOrder(orderId: string, menuItemId: string) {
@@ -938,7 +983,7 @@ export default function KitchenPage() {
                                                 if (result) updateDiscount(order.id, parseFloat(result))
                                             }} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Percent size={18} /></button>
                                             <button onClick={() => setEditingOrderId(editingOrderId === order.id ? null : order.id)} style={{ height: '48px', borderRadius: 'var(--radius)', border: `1px solid ${editingOrderId === order.id ? '#DC2626' : 'var(--border)'}`, background: editingOrderId === order.id ? '#FEE2E2' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: editingOrderId === order.id ? '#DC2626' : 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}>{editingOrderId === order.id ? <><XIcon size={16} /> Cancel</> : <><Pencil size={16} /> Edit</>}</button>
-                                            {order.billed ? <div style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid #10B981', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#059669', fontWeight: 600, fontSize: '0.875rem' }}><CheckCircle2 size={16} /> Billed</div> : <button onClick={() => handleGenerateBill(order.id, 'cash')} disabled={generatingBill === order.id || printingBill !== null} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}><Printer size={16} /> {generatingBill === order.id ? '...' : 'Bill'}</button>}
+                                            {order.billed ? <button onClick={() => handleReprintBill(order.id)} disabled={reprintingBill === order.id} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid #10B981', background: '#D1FAE5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#059669', fontWeight: 600, fontSize: '0.875rem' }}><CheckCircle2 size={16} /> {reprintingBill === order.id ? '...' : 'Print Bill'}</button> : <button onClick={() => handleGenerateBill(order.id, 'cash')} disabled={generatingBill === order.id || printingBill !== null} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}><Printer size={16} /> {generatingBill === order.id ? '...' : 'Bill'}</button>}
                                         </div>
                                     </div>
                                 )}

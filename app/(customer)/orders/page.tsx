@@ -221,7 +221,7 @@ export default function OrdersPage() {
                     createdAt: bill.created_at,
                     sessionDetails: bill.session_details
                 })
-                showSuccess('Bill Ready', 'Your bill is ready! You can print or save it as PDF.')
+                showSuccess('Bill Ready', 'Your bill is ready!')
             } else {
                 // No bill record found — just logout with notice
                 showSuccess('Bill Generated', 'Your bill has been processed. Logging you out...')
@@ -253,10 +253,14 @@ export default function OrdersPage() {
         }
 
         // CASE 2: Has orders — confirm bill generation
+        // Admin/Kitchen roles don't need logout warning
+        const isStaffRole = user?.role === 'ADMIN' || user?.role === 'KITCHEN'
         const confirmed = await showConfirm(
-            "Request Your Bill?",
-            "This will generate your bill. You can print or save it as PDF.",
-            "Get Bill",
+            isStaffRole ? "Generate Bill?" : "Before Bill Preview",
+            isStaffRole 
+                ? "This will generate your bill. You can print or save it as PDF."
+                : "You'll be logged out after billing and will need to start a new order next time. Continue to generate your bill preview?",
+            isStaffRole ? "Get Bill" : "Continue",
             "Not Yet"
         )
 

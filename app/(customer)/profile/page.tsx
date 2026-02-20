@@ -124,10 +124,14 @@ export default function ProfilePage() {
         }
 
         // CASE 2: Has orders — request bill
+        // Admin/Kitchen roles don't need logout warning
+        const isStaffRole = user?.role === 'ADMIN' || user?.role === 'KITCHEN'
         const confirmed = await showConfirm(
-            'Request Your Bill?',
-            'A waiter will bring the bill to your table.',
-            'Get Bill',
+            isStaffRole ? 'Generate Bill?' : 'Before Bill Preview',
+            isStaffRole 
+                ? 'This will generate your bill. You can print or save it as PDF.'
+                : "You'll be logged out after billing and will need to start a new order next time. Continue to generate your bill preview?",
+            isStaffRole ? 'Get Bill' : 'Continue',
             'Not Yet'
         )
 
