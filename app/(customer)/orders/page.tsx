@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/database/supabase'
 import { useAuth } from '@/lib/auth/context'
 
-import { useSearchParams } from 'next/navigation'
-import { ChevronLeft, Package, Clock, CheckCircle2, XCircle, ChevronDown } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { ChevronLeft, Package, Clock, CheckCircle2, XCircle, ChevronDown, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/Loading'
@@ -16,7 +16,8 @@ import { showError, showSuccess, showConfirm } from '@/components/ui/Popup'
 
 export default function OrdersPage() {
     const { user, logout } = useAuth()
-    const { clearCart } = useCart()
+    const { clearCart, addToCart, items: cartItems, setEditingOrderId } = useCart()
+    const router = useRouter()
     const searchParams = useSearchParams()
     const orderIdParam = searchParams.get('orderId')
 
@@ -30,6 +31,11 @@ export default function OrdersPage() {
     // Track whether we've already triggered auto-logout to avoid double-firing
     const [autoLogoutTriggered, setAutoLogoutTriggered] = useState(false)
 
+    // Cooldown notification state
+    const [showCooldown, setShowCooldown] = useState(false)
+    const [cooldownTime, setCooldownTime] = useState(120) // 2 minutes in seconds
+    const [lastOrderTime, setLastOrderTime] = useState<Date | null>(null)
+
     useEffect(() => {
         // If neither user nor orderIdParam, we can't show anything
         if (!user && !orderIdParam) {
@@ -41,8 +47,8 @@ export default function OrdersPage() {
             let query = supabase.from('orders').select(`
                 *,
                 items:order_items(
-                    id, quantity, price,
-                    menu_item:menu_items(name)
+                    id, menu_item_id, quantity, price,
+                    menu_item:menu_items(id, name)
                 )
             `)
 
@@ -56,6 +62,20 @@ export default function OrdersPage() {
 
             if (data) {
                 setOrders(data)
+
+                // Check for recent orders and start cooldown if needed
+                if (data.length > 0) {
+                    const mostRecentOrder = new Date(data[0].created_at)
+                    const now = new Date()
+                    const timeDiff = (now.getTime() - mostRecentOrder.getTime()) / 1000 // in seconds
+                    
+                    if (timeDiff < 120) { // Less than 2 minutes ago
+                        setLastOrderTime(mostRecentOrder)
+                        setShowCooldown(true)
+                        setCooldownTime(Math.ceil(120 - timeDiff))
+                    }
+                }
+
                 // Show bill preview when kitchen/admin has billed all orders
                 if (
                     user?.role === 'OUTSIDER' &&
@@ -129,6 +149,78 @@ export default function OrdersPage() {
         }
     }, [user, orderIdParam])
 
+    // Refs for stable references in timer callback
+    const logoutRef = useRef(logout)
+    const clearCartRef = useRef(clearCart)
+    const userRef = useRef(user)
+    useEffect(() => { logoutRef.current = logout }, [logout])
+    useEffect(() => { clearCartRef.current = clearCart }, [clearCart])
+    useEffect(() => { userRef.current = user }, [user])
+
+    // Cooldown timer effect + auto-logout when timer expires
+    useEffect(() => {
+        if (!showCooldown || cooldownTime < 0) return
+
+        if (cooldownTime === 0) {
+            // Timer expired — auto-logout immediately
+            setShowCooldown(false)
+            if (userRef.current?.role === 'OUTSIDER') {
+                console.log('Auto-logout triggered after 2-min cooldown')
+                clearCartRef.current()
+                logoutRef.current()
+            }
+            return
+        }
+
+        const timer = setInterval(() => {
+            setCooldownTime((prevTime) => prevTime - 1)
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [showCooldown, cooldownTime])
+
+    // Format cooldown time display
+    const formatCooldownTime = (seconds: number) => {
+        const minutes = Math.floor(seconds / 60)
+        const remainingSeconds = seconds % 60
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+    }
+
+    // Handle editing the most recent order within cooldown window
+    const handleEditOrder = () => {
+        if (orders.length === 0) return
+
+        // Get the most recent order (already sorted by created_at desc)
+        const recentOrder = orders[0]
+
+        // Clear existing cart and load order items into cart
+        clearCart()
+
+        // Set the editing order ID so cart page knows to update, not create
+        setEditingOrderId(recentOrder.id)
+
+        // Add each item from the order to the cart
+        if (recentOrder.items && recentOrder.items.length > 0) {
+            for (const item of recentOrder.items) {
+                const menuItemId = item.menu_item_id || item.menu_item?.id
+                const menuItemName = item.menu_item?.name || 'Item'
+                if (menuItemId) {
+                    // Add item with correct quantity
+                    for (let i = 0; i < item.quantity; i++) {
+                        addToCart({
+                            id: menuItemId,
+                            name: menuItemName,
+                            price: item.price,
+                        })
+                    }
+                }
+            }
+        }
+
+        // Navigate to menu so user can browse and modify items
+        router.push('/menu')
+    }
+
     // Separate effect for real-time guest session tracking (billed by kitchen/admin)
     useEffect(() => {
         if (
@@ -175,22 +267,10 @@ export default function OrdersPage() {
     // Fetch a bill generated by kitchen/admin and show it in the preview modal
     const fetchKitchenBill = async (orderIds: string[]) => {
         try {
-            // Try finding bill by order_id first
             let bills: any[] | null = null
-            const { data: billsByOrder } = await supabase
-                .from('bills')
-                .select(`
-                    *,
-                    bill_items(*)
-                `)
-                .in('order_id', orderIds)
-                .order('created_at', { ascending: false })
-                .limit(1)
 
-            bills = billsByOrder
-
-            // Fallback: try finding bill by session_id
-            if ((!bills || bills.length === 0) && activeSession && !activeSession._virtual && activeSession.id) {
+            // Strategy 1: Find bill by session_id (most reliable for session-based billing)
+            if (activeSession && !activeSession._virtual && activeSession.id) {
                 const { data: billsBySession } = await supabase
                     .from('bills')
                     .select(`
@@ -201,6 +281,34 @@ export default function OrdersPage() {
                     .order('created_at', { ascending: false })
                     .limit(1)
                 bills = billsBySession
+            }
+
+            // Strategy 2: Find bill by order_id
+            if (!bills || bills.length === 0) {
+                const { data: billsByOrder } = await supabase
+                    .from('bills')
+                    .select(`
+                        *,
+                        bill_items(*)
+                    `)
+                    .in('order_id', orderIds)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                bills = billsByOrder
+            }
+
+            // Strategy 3: Find most recent bill for this user by guest_name/table
+            if ((!bills || bills.length === 0) && user) {
+                const { data: billsByUser } = await supabase
+                    .from('bills')
+                    .select(`
+                        *,
+                        bill_items(*)
+                    `)
+                    .eq('guest_name', user.name || '')
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                bills = billsByUser
             }
 
             if (bills && bills.length > 0) {
@@ -221,12 +329,18 @@ export default function OrdersPage() {
                     createdAt: bill.created_at,
                     sessionDetails: bill.session_details
                 })
-                showSuccess('Bill Ready', 'Your bill is ready!')
             } else {
-                // No bill record found — just logout with notice
-                showSuccess('Bill Generated', 'Your bill has been processed. Logging you out...')
-                clearCart()
-                setTimeout(() => logout(), 2500)
+                // No bill record found — offer logout
+                const confirmed = await showConfirm(
+                    'Session Complete',
+                    'Your orders have been billed. Would you like to sign out?',
+                    'Sign Out',
+                    'Stay'
+                )
+                if (confirmed) {
+                    clearCart()
+                    logout()
+                }
             }
         } catch (err) {
             console.error('Failed to fetch kitchen bill:', err)
@@ -234,6 +348,31 @@ export default function OrdersPage() {
             clearCart()
             setTimeout(() => logout(), 2500)
         }
+    }
+
+    const handleOrderBill = (order: any) => {
+        const items = (order.items || []).map((item: any) => ({
+            item_name: item.menu_item?.name || 'Item',
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.quantity * item.price
+        }))
+        const itemsTotal = items.reduce((sum: number, i: any) => sum + i.subtotal, 0)
+        setBillPreview({
+            billNumber: `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+            items,
+            itemsTotal,
+            discountAmount: 0,
+            finalTotal: order.total || itemsTotal,
+            paymentMethod: 'cash',
+            createdAt: order.created_at,
+            sessionDetails: {
+                guestName: user?.name || order.guest_name || 'Guest',
+                numGuests: order.num_guests || 1,
+                orderCount: 1,
+                startedAt: order.created_at
+            }
+        })
     }
 
     const handleGetBill = async () => {
@@ -252,7 +391,15 @@ export default function OrdersPage() {
             return
         }
 
-        // CASE 2: Has orders — confirm bill generation
+        // CASE 2: All orders already billed — fetch existing bill and show it
+        const allBilled = orders.every((o: any) => o.billed === true)
+        if (allBilled) {
+            const orderIds = orders.map((o: any) => o.id)
+            await fetchKitchenBill(orderIds)
+            return
+        }
+
+        // CASE 3: Has unbilled orders — confirm bill generation
         // Admin/Kitchen roles don't need logout warning
         const isStaffRole = user?.role === 'ADMIN' || user?.role === 'KITCHEN'
         const confirmed = await showConfirm(
@@ -324,8 +471,8 @@ export default function OrdersPage() {
 
     const handleBillPreviewClose = () => {
         setBillPreview(null)
-        // If guest was auto-billed by kitchen, logout after they close the preview
-        if (user?.role === 'OUTSIDER' && autoLogoutTriggered) {
+        // Logout guest after viewing the bill
+        if (user?.role === 'OUTSIDER') {
             clearCart()
             setTimeout(() => logout(), 500)
         }
@@ -346,7 +493,69 @@ export default function OrdersPage() {
             minHeight: '100vh',
             background: 'var(--background)',
             paddingBottom: '120px',
-        }}>
+        }}>            {/* Cooldown Notification */}
+            {showCooldown && (
+                <div style={{
+                    position: 'fixed',
+                    top: '20px',
+                    right: '20px',
+                    background: '#fff3cd',
+                    border: '1px solid #ffeaa7',
+                    borderRadius: '12px',
+                    padding: '16px 20px',
+                    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+                    zIndex: 1000,
+                    maxWidth: '380px',
+                    animation: 'slideInRight 0.3s ease-out',
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontSize: '14px',
+                        color: '#856404',
+                    }}>
+                        <div style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            background: '#fbbf24',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '16px',
+                            flexShrink: 0,
+                        }}>
+                            ⏰
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                                Order Edit Window
+                            </div>
+                            <div style={{ lineHeight: 1.4 }}>
+                                If any order change is there, please update within  {formatCooldownTime(cooldownTime)} time
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleEditOrder}
+                            style={{
+                                background: '#10B981',
+                                color: 'white',
+                                border: 'none',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            Edit Order
+                        </button>
+                    </div>
+                </div>
+            )}
             {/* Bill Preview Modal */}
             {billPreview && (
                 <BillPreviewModal
@@ -364,24 +573,51 @@ export default function OrdersPage() {
                 paddingTop: 'clamp(2rem, 6vw, 3rem)',
                 color: 'white',
                 position: 'relative',
-                overflow: 'hidden',
             }}>
                 {/* Decorative circles */}
                 <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
                 <div style={{ position: 'absolute', bottom: '-30px', left: '20%', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
 
-                <div style={{ maxWidth: '600px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-                    <Link href={user ? "/home" : "/menu"} style={{ color: 'rgba(255,255,255,0.8)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', marginBottom: '12px' }}>
-                        <ChevronLeft size={18} />
-                        Back
-                    </Link>
-                    <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontFamily: 'var(--font-serif)', fontWeight: 800, letterSpacing: '-0.02em' }}>
-                        {orderIdParam && !user ? 'Order Status' : 'My Orders'}
-                    </h1>
-                    {orders.length > 0 && (
-                        <p style={{ margin: '6px 0 0', opacity: 0.85, fontSize: '0.9rem' }}>
-                            {orders.length} order{orders.length !== 1 ? 's' : ''} &middot; ₹{orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0).toFixed(0)} total
-                        </p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px' }}>
+                    <div style={{ maxWidth: '500px', position: 'relative', zIndex: 1, flex: 1 }}>
+                        <Link href={user ? "/home" : "/menu"} style={{ color: 'rgba(255,255,255,0.8)', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', marginBottom: '12px' }}>
+                            <ChevronLeft size={18} />
+                            Back
+                        </Link>
+                        <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontFamily: 'var(--font-serif)', fontWeight: 800, letterSpacing: '-0.02em' }}>
+                            {orderIdParam && !user ? 'Order Status' : 'My Orders'}
+                        </h1>
+                        {orders.length > 0 && (
+                            <p style={{ margin: '6px 0 0', opacity: 0.85, fontSize: '0.9rem' }}>
+                                {orders.length} order{orders.length !== 1 ? 's' : ''} &middot; ₹{orders.reduce((sum: number, o: any) => sum + (o.total || 0), 0).toFixed(0)} total
+                            </p>
+                        )}
+                    </div>
+                    {/* Logout button in header */}
+                    {user?.role === 'OUTSIDER' && (
+                        <button
+                            onClick={() => { clearCart(); logout() }}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                background: '#EF4444',
+                                color: 'white',
+                                border: 'none',
+                                padding: '10px 16px',
+                                borderRadius: '12px',
+                                fontWeight: 700,
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                boxShadow: '0 4px 12px rgba(239,68,68,0.4)',
+                                position: 'relative',
+                                zIndex: 2,
+                            }}
+                        >
+                            <LogOut size={16} />
+                            Sign Out
+                        </button>
                     )}
                 </div>
             </div>
@@ -751,6 +987,31 @@ export default function OrdersPage() {
                                                         Note: {order.notes}
                                                     </div>
                                                 )}
+
+                                                {/* View Bill Button */}
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleOrderBill(order) }}
+                                                    style={{
+                                                        width: '100%',
+                                                        marginTop: '12px',
+                                                        padding: '10px 0',
+                                                        borderRadius: '10px',
+                                                        background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        fontWeight: 700,
+                                                        fontSize: '0.85rem',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: '8px',
+                                                        boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+                                                    }}
+                                                >
+                                                    <Receipt size={16} />
+                                                    View Bill
+                                                </button>
                                             </div>
                                         </div>
                                     )}
@@ -803,11 +1064,61 @@ export default function OrdersPage() {
                 )}
             </div>
 
-            {/* Pulse animation for pending orders */}
+            {/* Sign Out Button for guests */}
+                {user?.role === 'OUTSIDER' && (
+                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                        <button
+                            onClick={() => {
+                                clearCart()
+                                logout()
+                            }}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: 'white',
+                                color: '#EF4444',
+                                border: '1.5px solid #FCA5A5',
+                                padding: '12px 28px',
+                                borderRadius: '14px',
+                                fontWeight: 700,
+                                fontSize: '0.9rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(239,68,68,0.12)',
+                                transition: 'all 0.2s ease',
+                            }}
+                        >
+                            <LogOut size={18} />
+                            Sign Out
+                        </button>
+                    </div>
+                )}
+
+            {/* Animations for notification and pulse */}
             <style>{`
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                
                 @keyframes pulse {
                     0%, 100% { opacity: 1; transform: scale(1); }
                     50% { opacity: 0.5; transform: scale(1.2); }
+                }
+
+                @media (max-width: 480px) {
+                    .cooldown-notification {
+                        top: 10px !important;
+                        right: 10px !important;
+                        left: 10px !important;
+                        max-width: none !important;
+                    }
                 }
             `}</style>
         </div>

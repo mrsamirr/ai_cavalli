@@ -28,7 +28,9 @@ import {
     XIcon,
     Receipt,
     BellRing,
-    Plus
+    Plus,
+    Package,
+    AlertCircle
 } from 'lucide-react'
 import { Loading } from '@/components/ui/Loading'
 import { MenuItemSelector } from '@/components/kitchen/MenuItemSelector'
@@ -754,9 +756,9 @@ export default function KitchenPage() {
 
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: 'var(--space-6)',
-                alignItems: 'start'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                gap: 'clamp(1rem, 2vw, 1.5rem)',
+                alignItems: 'stretch'
             }}>
                 {(showCompleted ? completedOrders : filteredOrders).length === 0 ? (
                     <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 'var(--space-12)', background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: '2px dashed var(--border)' }}>
@@ -778,64 +780,100 @@ export default function KitchenPage() {
                         return (
                             <div key={order.id} className="fade-in" style={{
                                 background: 'var(--surface)',
-                                borderRadius: 'var(--radius-lg)',
-                                boxShadow: 'var(--shadow-md)',
+                                borderRadius: '16px',
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
                                 overflow: 'hidden',
-                                border: `1px solid var(--border)`,
-                                borderTop: `4px solid ${sc.color}`,
+                                border: `2px solid ${sc.color}20`,
                                 display: 'flex',
                                 flexDirection: 'column',
-                                transition: 'var(--transition)'
+                                transition: 'all 0.3s ease',
+                                position: 'relative',
+                                minHeight: '580px',
+                                height: 'fit-content'
                             }}>
-                                <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: 800, color: sc.color, letterSpacing: '0.05em' }}>{sc.label}</span>
-                                            {sc.pulse && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: sc.color, animation: 'pulse 1.5s infinite' }} />}
-                                        </div>
-                                        <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>
-                                            {order.notes === 'REGULAR_STAFF_MEAL' ? (
-                                                <span style={{ color: '#3B82F6' }}>{order.user?.name || 'Staff'}<br /><span style={{ fontSize: '0.9rem', opacity: 0.8 }}>Regular Meal Order</span></span>
-                                            ) : order.table_name}
-                                        </h3>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', color: badge.color }}>
-                                            <TypeIcon size={14} />
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{badge.label}</span>
+                                {/* Status Bar */}
+                                <div style={{ 
+                                    background: `linear-gradient(135deg, ${sc.color} 0%, ${sc.color}dd 100%)`,
+                                    padding: '12px 20px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 900, color: 'white', letterSpacing: '0.08em' }}>{sc.label}</span>
+                                        {sc.pulse && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'white', animation: 'pulse 1.5s infinite', boxShadow: '0 0 8px white' }} />}
+                                    </div>
+                                    <span style={{ fontWeight: 900, fontSize: '1.25rem', color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+                                        {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+
+                                {/* Header Info */}
+                                <div style={{ padding: '20px 20px 16px', borderBottom: '2px solid #f0f0f0', minHeight: '140px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <h3 style={{ margin: '0 0 10px 0', fontSize: '1.75rem', fontWeight: 900, color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {order.notes === 'REGULAR_STAFF_MEAL' ? (
+                                                    <span style={{ color: '#3B82F6' }}>{order.user?.name || 'Staff'} <span style={{ fontSize: '1rem', opacity: 0.7, display: 'block', marginTop: '4px' }}>Regular Meal</span></span>
+                                                ) : order.table_name}
+                                            </h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', minHeight: '32px' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: `${badge.color}15`, color: badge.color, padding: '4px 10px', borderRadius: '20px', border: `1.5px solid ${badge.color}30` }}>
+                                                    <TypeIcon size={14} strokeWidth={2.5} />
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 800 }}>{badge.label}</span>
+                                                </div>
+                                                {order.location_type && (
+                                                    <div style={{ background: order.location_type === 'outdoor' ? '#FEF3C7' : '#DBEAFE', color: order.location_type === 'outdoor' ? '#92400E' : '#1E40AF', padding: '4px 10px', borderRadius: '20px', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', border: `1.5px solid ${order.location_type === 'outdoor' ? '#FCD34D' : '#93C5FD'}` }}>{order.location_type}</div>
+                                                )}
+                                                <div style={{ background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '20px', fontWeight: 800, fontSize: '0.75rem', border: '1.5px solid rgba(var(--primary-rgb), 0.2)' }}>{order.num_guests || 1} GUESTS</div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                                            <span style={{ fontWeight: 700, fontSize: '1.125rem' }}>
-                                                {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px dashed #e5e5e5', minHeight: '36px' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                            <span style={{ fontWeight: 600 }}>Order for:</span> <span style={{ fontWeight: 800, color: 'var(--text)' }}>{order.guest_info?.name || order.user?.name || 'Walk-in'}</span>
                                         </div>
-                                        <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>ORDER #{order.id.slice(0, 8).toUpperCase()}</p>
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em' }}>#{order.id.slice(0, 8).toUpperCase()}</div>
                                     </div>
                                 </div>
 
-                                <div style={{ padding: 'var(--space-4)', flex: 1 }}>
-                                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                                        <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>ORDER ITEMS</p>
-                                        <div style={{ background: 'var(--background)', borderRadius: 'var(--radius)', padding: 'var(--space-3)' }}>
+                                {/* Order Items */}
+                                <div style={{ padding: '20px', flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                    <div style={{ marginBottom: '16px', flex: '1 1 auto', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                            <Package size={16} color="var(--primary)" strokeWidth={2.5} />
+                                            <p style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Order Items</p>
+                                        </div>
+                                        <div style={{ 
+                                            background: '#FAFAF9', 
+                                            borderRadius: '12px', 
+                                            padding: '16px', 
+                                            border: '1px solid #E7E5E4',
+                                            flex: '1 1 auto',
+                                            minHeight: 0,
+                                            maxHeight: '280px',
+                                            overflowY: 'auto',
+                                            overflowX: 'hidden'
+                                        }}>
                                             {editingOrderId === order.id ? (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                                     {order.notes === 'REGULAR_STAFF_MEAL' && (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)', marginBottom: '4px' }}>
-                                                            <Utensils size={20} color="#3B82F6" />
-                                                            <div>
-                                                                <div style={{ fontWeight: 800, color: '#3B82F6', fontSize: '1rem' }}>Standard Regular Meal</div>
-                                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Base meal + additional items below</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '12px', border: '2px dashed rgba(59, 130, 246, 0.3)', marginBottom: '6px' }}>
+                                                            <Utensils size={22} color="#3B82F6" />
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ fontWeight: 900, color: '#3B82F6', fontSize: '1rem' }}>Standard Regular Meal</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginTop: '2px' }}>Base meal + additional items below</div>
                                                             </div>
                                                         </div>
                                                     )}
                                                     {order.items?.map((item: any) => (
-                                                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                                                            <span style={{ flex: 1, fontWeight: 600 }}>{item.menu_item?.name}</span>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                <button onClick={() => updateItemQuantity(item.id, order.id, item.quantity - 1)} disabled={item.quantity <= 1} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', fontWeight: 700 }}>-</button>
-                                                                <span style={{ minWidth: '30px', textAlign: 'center', fontWeight: 700 }}>{item.quantity}</span>
-                                                                <button onClick={() => updateItemQuantity(item.id, order.id, item.quantity + 1)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', fontWeight: 700 }}>+</button>
-                                                                <button onClick={() => deleteOrderItem(item.id, order.id)} style={{ width: '28px', height: '28px', borderRadius: '4px', border: '1px solid #DC2626', background: 'white', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</button>
+                                                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'white', borderRadius: '10px', border: '1.5px solid #E7E5E4', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                                                            <span style={{ flex: 1, fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>{item.menu_item?.name}</span>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                <button onClick={() => updateItemQuantity(item.id, order.id, item.quantity - 1)} disabled={item.quantity <= 1} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid #D6D3D1', background: 'white', cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer', fontWeight: 800, fontSize: '1.1rem', opacity: item.quantity <= 1 ? 0.5 : 1, transition: 'all 0.2s' }}>-</button>
+                                                                <span style={{ minWidth: '32px', textAlign: 'center', fontWeight: 900, fontSize: '1rem' }}>{item.quantity}</span>
+                                                                <button onClick={() => updateItemQuantity(item.id, order.id, item.quantity + 1)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid #D6D3D1', background: 'white', cursor: 'pointer', fontWeight: 800, fontSize: '1.1rem', transition: 'all 0.2s' }}>+</button>
+                                                                <button onClick={() => deleteOrderItem(item.id, order.id)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid #DC2626', background: '#FEE2E2', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', transition: 'all 0.2s' }}>🗑️</button>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -845,46 +883,46 @@ export default function KitchenPage() {
                                                             setShowMenuSelector(true)
                                                         }}
                                                         style={{ 
-                                                            padding: '8px 12px', 
-                                                            borderRadius: '8px', 
-                                                            border: '1px solid var(--border)', 
-                                                            background: 'white', 
-                                                            fontWeight: 600, 
+                                                            padding: '12px 16px', 
+                                                            borderRadius: '10px', 
+                                                            border: '2px dashed var(--primary)', 
+                                                            background: 'rgba(var(--primary-rgb), 0.05)', 
+                                                            fontWeight: 700, 
                                                             cursor: 'pointer',
                                                             display: 'flex',
                                                             alignItems: 'center',
-                                                            gap: '6px',
+                                                            justifyContent: 'center',
+                                                            gap: '8px',
                                                             color: 'var(--primary)',
-                                                            transition: 'all 0.2s ease'
+                                                            transition: 'all 0.2s ease',
+                                                            fontSize: '0.95rem'
                                                         }}
                                                         onMouseEnter={(e) => {
-                                                            e.currentTarget.style.background = '#f5f5f5'
-                                                            e.currentTarget.style.borderColor = 'var(--primary)'
+                                                            e.currentTarget.style.background = 'rgba(var(--primary-rgb), 0.1)'
                                                         }}
                                                         onMouseLeave={(e) => {
-                                                            e.currentTarget.style.background = 'white'
-                                                            e.currentTarget.style.borderColor = 'var(--border)'
+                                                            e.currentTarget.style.background = 'rgba(var(--primary-rgb), 0.05)'
                                                         }}
                                                     >
-                                                        <Plus size={18} />
-                                                        Add Item
+                                                        <Plus size={18} strokeWidth={3} />
+                                                        Add Item to Order
                                                     </button>
                                                 </div>
                                             ) : (
                                                 <>
                                                     {order.notes === 'REGULAR_STAFF_MEAL' && (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px dashed rgba(59, 130, 246, 0.3)', marginBottom: '8px' }}>
-                                                            <Utensils size={20} color="#3B82F6" />
-                                                            <div>
-                                                                <div style={{ fontWeight: 800, color: '#3B82F6', fontSize: '1rem' }}>Standard Regular Meal</div>
-                                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Base meal + additional items below</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', background: 'rgba(59, 130, 246, 0.08)', borderRadius: '12px', border: '2px dashed rgba(59, 130, 246, 0.3)', marginBottom: '12px' }}>
+                                                            <Utensils size={22} color="#3B82F6" />
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ fontWeight: 900, color: '#3B82F6', fontSize: '1rem' }}>Standard Regular Meal</div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, marginTop: '2px' }}>Base meal + additional items below</div>
                                                             </div>
                                                         </div>
                                                     )}
-                                                    {order.items?.map((item: any) => (
-                                                        <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 600, padding: '4px 0', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
-                                                            <span>{item.menu_item?.name}</span>
-                                                            <span style={{ color: 'var(--primary)' }}>x{item.quantity}</span>
+                                                    {order.items?.map((item: any, idx: number) => (
+                                                        <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', fontWeight: 700, padding: '10px 0', borderBottom: idx < (order.items?.length || 0) - 1 ? '1px solid #E7E5E4' : 'none' }}>
+                                                            <span style={{ color: 'var(--text)' }}>{item.menu_item?.name}</span>
+                                                            <span style={{ color: 'var(--primary)', fontSize: '1.05rem', fontWeight: 900 }}>x{item.quantity}</span>
                                                         </div>
                                                     ))}
                                                 </>
@@ -893,45 +931,36 @@ export default function KitchenPage() {
                                     </div>
 
                                     {order.notes && order.notes !== 'REGULAR_STAFF_MEAL' && (
-                                        <div style={{ background: '#FEF2F2', color: '#DC2626', padding: 'var(--space-3)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-4)', fontSize: '0.875rem', borderLeft: '3px solid #EF4444' }}>
-                                            <div style={{ fontWeight: 800, fontSize: '0.7rem', marginBottom: '2px', textTransform: 'uppercase' }}>Attention: Special Note</div>
-                                            {order.notes}
+                                        <div style={{ background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)', color: '#DC2626', padding: '14px 16px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.9rem', borderLeft: '4px solid #EF4444', boxShadow: '0 2px 8px rgba(220, 38, 38, 0.1)', flexShrink: 0 }}>
+                                            <div style={{ fontWeight: 900, fontSize: '0.75rem', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <AlertCircle size={14} />
+                                                Special Note
+                                            </div>
+                                            <div style={{ fontWeight: 600 }}>{order.notes}</div>
                                         </div>
                                     )}
 
-                                    <div style={{ marginBottom: 'var(--space-4)', fontSize: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                        <div>
-                                            <span style={{ color: 'var(--text-muted)' }}>Order for: </span>
-                                            <span style={{ fontWeight: 700 }}>{order.guest_info?.name || order.user?.name || 'Walk-in'}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                            {order.location_type && (
-                                                <div style={{ background: order.location_type === 'outdoor' ? '#FEF3C7' : '#DBEAFE', color: order.location_type === 'outdoor' ? '#92400E' : '#1E40AF', padding: '2px 8px', borderRadius: '12px', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase' }}>{order.location_type}</div>
-                                            )}
-                                            <div style={{ background: 'rgba(var(--primary-rgb), 0.1)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '12px', fontWeight: 800, fontSize: '0.75rem' }}>{order.num_guests || 1} GUESTS</div>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid var(--border-light)', paddingTop: 'var(--space-3)' }}>
+                                    {/* Totals Section */}
+                                    <div style={{ background: '#F5F5F4', borderRadius: '12px', padding: '16px', border: '1px solid #E7E5E4', flexShrink: 0, minHeight: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                         {(() => {
                                             const itemsTotal = order.items?.reduce((sum, item: any) => sum + (item.price * item.quantity), 0) || 0
                                             const discountAmount = order.discount_amount > 0 ? itemsTotal * (order.discount_amount / 100) : 0
                                             const finalTotal = itemsTotal - discountAmount
                                             return (
                                                 <>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                                        <span>Items Total</span>
-                                                        <span>₹{itemsTotal.toFixed(2)}</span>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                                        <span style={{ fontWeight: 600 }}>Items Total</span>
+                                                        <span style={{ fontWeight: 700 }}>₹{itemsTotal.toFixed(2)}</span>
                                                     </div>
                                                     {order.discount_amount > 0 && (
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#DC2626', fontWeight: 600 }}>
-                                                            <span>Staff/Rider Discount ({order.discount_amount}%)</span>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: '#DC2626', fontWeight: 700, marginBottom: '8px' }}>
+                                                            <span>Discount ({order.discount_amount}%)</span>
                                                             <span>-₹{discountAmount.toFixed(2)}</span>
                                                         </div>
                                                     )}
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', fontWeight: 800, marginTop: '2px' }}>
-                                                        <span>Final Total</span>
-                                                        <span style={{ color: 'var(--primary)' }}>₹{finalTotal.toFixed(2)}</span>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.15rem', fontWeight: 900, marginTop: '12px', paddingTop: '12px', borderTop: '2px solid #D6D3D1' }}>
+                                                        <span style={{ color: 'var(--text)' }}>Final Total</span>
+                                                        <span style={{ color: 'var(--primary)', fontSize: '1.35rem' }}>₹{finalTotal.toFixed(2)}</span>
                                                     </div>
                                                 </>
                                             )
@@ -939,51 +968,255 @@ export default function KitchenPage() {
                                     </div>
                                 </div>
 
+                                {/* Action Buttons */}
                                 {!showCompleted && (
-                                    <div style={{ padding: 'var(--space-4)', background: '#F9FAFB', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                                        <div style={{ width: '100%' }}>
-                                            {order.status === 'pending' && <Button onClick={() => updateStatus(order.id, 'preparing')} size="lg" style={{ width: '100%', height: '56px', fontWeight: 800 }}>START COOKING</Button>}
-                                            {order.status === 'preparing' && <Button onClick={() => updateStatus(order.id, 'ready')} size="lg" style={{ width: '100%', height: '56px', fontWeight: 800, background: '#10B981', border: 'none', color: 'white' }}>MARK AS READY</Button>}
-                                            {order.status === 'ready' && <Button onClick={() => updateStatus(order.id, 'completed')} size="lg" variant="outline" style={{ width: '100%', height: '56px', fontWeight: 800, color: 'var(--text)', border: '2px solid var(--border)' }}>HAND OVER</Button>}
+                                    <div style={{ padding: '20px', background: 'linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%)', borderTop: '2px solid #E5E5E5', flexShrink: 0, minHeight: '180px', display: 'flex', flexDirection: 'column' }}>
+                                        {/* Primary Action Button */}
+                                        <div style={{ marginBottom: '14px', minHeight: '64px' }}>
+                                            {order.status === 'pending' && (
+                                                <Button 
+                                                    onClick={() => updateStatus(order.id, 'preparing')} 
+                                                    size="lg" 
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        height: '64px', 
+                                                        fontWeight: 900, 
+                                                        fontSize: '1.05rem',
+                                                        background: 'linear-gradient(135deg, var(--primary) 0%, #8B1A1F 100%)',
+                                                        border: 'none',
+                                                        boxShadow: '0 4px 12px rgba(192, 39, 45, 0.3)',
+                                                        letterSpacing: '0.05em',
+                                                        borderRadius: '12px'
+                                                    }}
+                                                >
+                                                    START COOKING
+                                                </Button>
+                                            )}
+                                            {order.status === 'preparing' && (
+                                                <Button 
+                                                    onClick={() => updateStatus(order.id, 'ready')} 
+                                                    size="lg" 
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        height: '64px', 
+                                                        fontWeight: 900, 
+                                                        fontSize: '1.05rem',
+                                                        background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', 
+                                                        border: 'none', 
+                                                        color: 'white',
+                                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                                                        letterSpacing: '0.05em',
+                                                        borderRadius: '12px'
+                                                    }}
+                                                >
+                                                    MARK AS READY
+                                                </Button>
+                                            )}
+                                            {order.status === 'ready' && (
+                                                <Button 
+                                                    onClick={() => updateStatus(order.id, 'completed')} 
+                                                    size="lg" 
+                                                    variant="outline" 
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        height: '64px', 
+                                                        fontWeight: 900, 
+                                                        fontSize: '1.05rem',
+                                                        color: 'var(--text)', 
+                                                        border: '2px solid #D1D5DB',
+                                                        background: 'white',
+                                                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                                                        letterSpacing: '0.05em',
+                                                        borderRadius: '12px'
+                                                    }}
+                                                >
+                                                    HAND OVER
+                                                </Button>
+                                            )}
                                         </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 1fr', gap: 'var(--space-2)' }}>
-                                            <button onClick={async () => {
-                                                const result = await new Promise<string | null>((resolve) => {
-                                                    let val = ''
-                                                    showPopup({
-                                                        type: 'confirm',
-                                                        title: 'Apply Discount',
-                                                        message: 'Enter discount percentage (0-100):',
-                                                        confirmText: 'Apply',
-                                                        cancelText: 'Cancel',
-                                                        onConfirm: () => {
-                                                            const input = document.getElementById('discount-input') as HTMLInputElement
-                                                            resolve(input?.value || null)
-                                                        },
-                                                        onCancel: () => resolve(null),
+                                        
+                                        {/* Secondary Action Buttons */}
+                                        <div style={{ display: 'flex', gap: '10px', minHeight: '52px' }}>
+                                            <button 
+                                                onClick={async () => {
+                                                    const result = await new Promise<string | null>((resolve) => {
+                                                        let val = ''
+                                                        showPopup({
+                                                            type: 'confirm',
+                                                            title: 'Apply Discount',
+                                                            message: 'Enter discount percentage (0-100):',
+                                                            confirmText: 'Apply',
+                                                            cancelText: 'Cancel',
+                                                            onConfirm: () => {
+                                                                const input = document.getElementById('discount-input') as HTMLInputElement
+                                                                resolve(input?.value || null)
+                                                            },
+                                                            onCancel: () => resolve(null),
+                                                        })
+                                                        setTimeout(() => {
+                                                            const msgEl = document.querySelector('[class*="popupMessage"]')
+                                                            if (msgEl && !document.getElementById('discount-input')) {
+                                                                const inp = document.createElement('input')
+                                                                inp.id = 'discount-input'
+                                                                inp.type = 'number'
+                                                                inp.min = '0'
+                                                                inp.max = '100'
+                                                                inp.placeholder = 'e.g. 10'
+                                                                inp.style.cssText = 'width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:12px;font-size:1.1rem;font-weight:700;margin-top:12px;text-align:center;outline:none;'
+                                                                inp.addEventListener('focus', () => inp.style.borderColor = 'var(--primary)')
+                                                                inp.addEventListener('blur', () => inp.style.borderColor = 'var(--border)')
+                                                                msgEl.after(inp)
+                                                                inp.focus()
+                                                            }
+                                                        }, 50)
                                                     })
-                                                    // Inject an input field after popup renders
-                                                    setTimeout(() => {
-                                                        const msgEl = document.querySelector('[class*="popupMessage"]')
-                                                        if (msgEl && !document.getElementById('discount-input')) {
-                                                            const inp = document.createElement('input')
-                                                            inp.id = 'discount-input'
-                                                            inp.type = 'number'
-                                                            inp.min = '0'
-                                                            inp.max = '100'
-                                                            inp.placeholder = 'e.g. 10'
-                                                            inp.style.cssText = 'width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:12px;font-size:1.1rem;font-weight:700;margin-top:12px;text-align:center;outline:none;'
-                                                            inp.addEventListener('focus', () => inp.style.borderColor = 'var(--primary)')
-                                                            inp.addEventListener('blur', () => inp.style.borderColor = 'var(--border)')
-                                                            msgEl.after(inp)
-                                                            inp.focus()
+                                                    if (result) updateDiscount(order.id, parseFloat(result))
+                                                }} 
+                                                style={{ 
+                                                    flex: '0 0 58px',
+                                                    height: '52px', 
+                                                    borderRadius: '12px', 
+                                                    border: '1.5px solid #D1D5DB', 
+                                                    background: 'white', 
+                                                    cursor: 'pointer', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center', 
+                                                    color: '#6B7280',
+                                                    transition: 'all 0.2s',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.borderColor = 'var(--primary)'
+                                                    e.currentTarget.style.color = 'var(--primary)'
+                                                    e.currentTarget.style.transform = 'translateY(-2px)'
+                                                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)'
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.borderColor = '#D1D5DB'
+                                                    e.currentTarget.style.color = '#6B7280'
+                                                    e.currentTarget.style.transform = 'translateY(0)'
+                                                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                                                }}
+                                            >
+                                                <Percent size={20} strokeWidth={2.5} />
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={() => setEditingOrderId(editingOrderId === order.id ? null : order.id)} 
+                                                style={{ 
+                                                    flex: 1,
+                                                    height: '52px', 
+                                                    borderRadius: '12px', 
+                                                    border: `1.5px solid ${editingOrderId === order.id ? '#DC2626' : '#D1D5DB'}`, 
+                                                    background: editingOrderId === order.id ? '#FEE2E2' : 'white', 
+                                                    cursor: 'pointer', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'center', 
+                                                    gap: '8px', 
+                                                    color: editingOrderId === order.id ? '#DC2626' : '#374151', 
+                                                    fontWeight: 700, 
+                                                    fontSize: '0.9rem',
+                                                    transition: 'all 0.2s',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (editingOrderId !== order.id) {
+                                                        e.currentTarget.style.background = '#F9FAFB'
+                                                        e.currentTarget.style.transform = 'translateY(-2px)'
+                                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)'
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (editingOrderId !== order.id) {
+                                                        e.currentTarget.style.background = 'white'
+                                                        e.currentTarget.style.transform = 'translateY(0)'
+                                                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                                                    }
+                                                }}
+                                            >
+                                                {editingOrderId === order.id ? (
+                                                    <><XIcon size={18} strokeWidth={2.5} /> Cancel</>
+                                                ) : (
+                                                    <><Pencil size={18} strokeWidth={2.5} /> Edit</>
+                                                )}
+                                            </button>
+                                            
+                                            {order.billed ? (
+                                                <button 
+                                                    onClick={() => handleReprintBill(order.id)} 
+                                                    disabled={reprintingBill === order.id} 
+                                                    style={{ 
+                                                        flex: 1,
+                                                        height: '52px', 
+                                                        borderRadius: '12px', 
+                                                        border: '1.5px solid #10B981', 
+                                                        background: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)', 
+                                                        cursor: 'pointer', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        justifyContent: 'center', 
+                                                        gap: '8px', 
+                                                        color: '#059669', 
+                                                        fontWeight: 700, 
+                                                        fontSize: '0.9rem',
+                                                        transition: 'all 0.2s',
+                                                        boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'translateY(-2px)'
+                                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)'
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'translateY(0)'
+                                                        e.currentTarget.style.boxShadow = '0 2px 6px rgba(16, 185, 129, 0.2)'
+                                                    }}
+                                                >
+                                                    <CheckCircle2 size={18} strokeWidth={2.5} /> 
+                                                    {reprintingBill === order.id ? '...' : 'Print Bill'}
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => handleGenerateBill(order.id, 'cash')} 
+                                                    disabled={generatingBill === order.id || printingBill !== null} 
+                                                    style={{ 
+                                                        flex: 1,
+                                                        height: '52px', 
+                                                        borderRadius: '12px', 
+                                                        border: '1.5px solid #D1D5DB', 
+                                                        background: 'white', 
+                                                        cursor: generatingBill === order.id ? 'not-allowed' : 'pointer', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        justifyContent: 'center', 
+                                                        gap: '8px', 
+                                                        color: '#374151', 
+                                                        fontWeight: 700, 
+                                                        fontSize: '0.9rem',
+                                                        opacity: generatingBill === order.id ? 0.6 : 1,
+                                                        transition: 'all 0.2s',
+                                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (generatingBill !== order.id && printingBill === null) {
+                                                            e.currentTarget.style.background = '#F9FAFB'
+                                                            e.currentTarget.style.transform = 'translateY(-2px)'
+                                                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)'
                                                         }
-                                                    }, 50)
-                                                })
-                                                if (result) updateDiscount(order.id, parseFloat(result))
-                                            }} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Percent size={18} /></button>
-                                            <button onClick={() => setEditingOrderId(editingOrderId === order.id ? null : order.id)} style={{ height: '48px', borderRadius: 'var(--radius)', border: `1px solid ${editingOrderId === order.id ? '#DC2626' : 'var(--border)'}`, background: editingOrderId === order.id ? '#FEE2E2' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: editingOrderId === order.id ? '#DC2626' : 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}>{editingOrderId === order.id ? <><XIcon size={16} /> Cancel</> : <><Pencil size={16} /> Edit</>}</button>
-                                            {order.billed ? <button onClick={() => handleReprintBill(order.id)} disabled={reprintingBill === order.id} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid #10B981', background: '#D1FAE5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#059669', fontWeight: 600, fontSize: '0.875rem' }}><CheckCircle2 size={16} /> {reprintingBill === order.id ? '...' : 'Print Bill'}</button> : <button onClick={() => handleGenerateBill(order.id, 'cash')} disabled={generatingBill === order.id || printingBill !== null} style={{ height: '48px', borderRadius: 'var(--radius)', border: '1px solid var(--border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--text)', fontWeight: 600, fontSize: '0.875rem' }}><Printer size={16} /> {generatingBill === order.id ? '...' : 'Bill'}</button>}
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (generatingBill !== order.id) {
+                                                            e.currentTarget.style.background = 'white'
+                                                            e.currentTarget.style.transform = 'translateY(0)'
+                                                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Printer size={18} strokeWidth={2.5} /> 
+                                                    {generatingBill === order.id ? '...' : 'Bill'}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -1020,6 +1253,25 @@ export default function KitchenPage() {
                     0% { transform: scale(0.95); opacity: 0.5; }
                     50% { transform: scale(1); opacity: 1; }
                     100% { transform: scale(0.95); opacity: 0.5; }
+                }
+                
+                /* Custom scrollbar for order items */
+                div[style*="overflowY: auto"]::-webkit-scrollbar {
+                    width: 6px;
+                }
+                
+                div[style*="overflowY: auto"]::-webkit-scrollbar-track {
+                    background: #E7E5E4;
+                    border-radius: 10px;
+                }
+                
+                div[style*="overflowY: auto"]::-webkit-scrollbar-thumb {
+                    background: #A8A29E;
+                    border-radius: 10px;
+                }
+                
+                div[style*="overflowY: auto"]::-webkit-scrollbar-thumb:hover {
+                    background: #78716C;
                 }
             `}</style>
         </div>

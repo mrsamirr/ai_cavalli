@@ -14,7 +14,7 @@ import { Loading } from '@/components/ui/Loading'
 import { showError } from '@/components/ui/Popup'
 
 export default function CartPage() {
-    const { items, removeFromCart, updateQuantity, total, clearCart } = useCart()
+    const { items, removeFromCart, updateQuantity, total, clearCart, editingOrderId, setEditingOrderId } = useCart()
     const { user } = useAuth()
     const router = useRouter()
 
@@ -82,26 +82,47 @@ export default function CartPage() {
             // Get auth token
             const token = localStorage.getItem('session_token')
 
-            // Call Order API
-            const orderResponse = await fetch('/api/orders/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
-                body: JSON.stringify({
-                    userId: user?.id,
-                    phone: user?.phone,
-                    items: items.filter(item => item.itemId !== 'REGULAR_MEAL_VIRTUAL'),
-                    tableName,
-                    numGuests,
-                    locationType,
-                    notes: finalNotes,
-                    sessionId
-                })
-            })
+            let orderData: any
 
-            const orderData = await orderResponse.json()
+            if (editingOrderId) {
+                // UPDATE existing order
+                const orderResponse = await fetch('/api/orders/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        orderId: editingOrderId,
+                        userId: user?.id,
+                        items: items.filter(item => item.itemId !== 'REGULAR_MEAL_VIRTUAL'),
+                        notes: finalNotes,
+                    })
+                })
+
+                orderData = await orderResponse.json()
+            } else {
+                // CREATE new order
+                const orderResponse = await fetch('/api/orders/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        userId: user?.id,
+                        phone: user?.phone,
+                        items: items.filter(item => item.itemId !== 'REGULAR_MEAL_VIRTUAL'),
+                        tableName,
+                        numGuests,
+                        locationType,
+                        notes: finalNotes,
+                        sessionId
+                    })
+                })
+
+                orderData = await orderResponse.json()
+            }
 
             if (!orderData.success) {
                 throw new Error(orderData.error || 'Failed to place order')
@@ -121,7 +142,7 @@ export default function CartPage() {
     }
 
     if (loading) {
-        return <Loading fullScreen message="Placing your order..." />
+        return <Loading fullScreen message={editingOrderId ? "Updating your order..." : "Placing your order..."} />
     }
 
     if (items.length === 0) {
@@ -160,7 +181,43 @@ export default function CartPage() {
 
     return (
         <div className="container fade-in" style={{ paddingTop: 'var(--space-6)', paddingBottom: 'var(--space-12)' }}>
-            <PageHeader title="Checkout" backHref="/menu" />
+            <PageHeader title={editingOrderId ? "Edit Order" : "Checkout"} backHref={editingOrderId ? "/menu" : "/orders"} />
+
+            {/* Editing Order Banner */}
+            {editingOrderId && (
+                <div style={{
+                    background: '#FEF3C7',
+                    border: '1.5px solid #F59E0B',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    marginBottom: 'var(--space-6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                }}>
+                    <span style={{ fontSize: '18px' }}>✏️</span>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#92400E' }}>Editing Existing Order</div>
+                        <div style={{ fontSize: '0.8rem', color: '#A16207' }}>Modify items below and confirm to update your order</div>
+                    </div>
+                    <button
+                        onClick={() => { clearCart(); router.push('/orders') }}
+                        style={{
+                            background: 'transparent',
+                            border: '1px solid #D97706',
+                            borderRadius: '8px',
+                            padding: '6px 12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: '#92400E',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                        }}
+                    >
+                        Cancel Edit
+                    </button>
+                </div>
+            )}
 
             <div style={{
                 display: 'grid',
@@ -348,7 +405,7 @@ export default function CartPage() {
                             )}
 
                             <Button type="submit" isLoading={loading} size="lg" style={{ marginTop: 'var(--space-4)', height: '56px', fontSize: '1.125rem' }}>
-                                Confirm Order
+                                {editingOrderId ? 'Update Order' : 'Confirm Order'}
                             </Button>
                         </form>
                     </div>

@@ -69,8 +69,59 @@ export async function POST(request: NextRequest) {
         }
 
         if (!orders || orders.length === 0) {
+            // Check if there are already-billed orders — return existing bill
+            const { data: billedOrders } = await supabase
+                .from('orders')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('billed', true)
+                .order('created_at', { ascending: false })
+
+            if (billedOrders && billedOrders.length > 0) {
+                // Fetch the most recent bill for these orders
+                const { data: existingBill } = await supabase
+                    .from('bills')
+                    .select(`
+                        *,
+                        bill_items(*)
+                    `)
+                    .in('order_id', billedOrders.map((o: any) => o.id))
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single()
+
+                if (existingBill) {
+                    const billItems = (existingBill.bill_items || []).map((item: any) => ({
+                        item_name: item.item_name || item.name || 'Item',
+                        quantity: item.quantity,
+                        price: item.price,
+                        subtotal: item.subtotal || (item.quantity * item.price)
+                    }))
+
+                    return NextResponse.json({
+                        success: true,
+                        bill: {
+                            id: existingBill.id,
+                            billNumber: existingBill.bill_number,
+                            itemsTotal: existingBill.items_total,
+                            discountAmount: existingBill.discount_amount || 0,
+                            finalTotal: existingBill.final_total,
+                            paymentMethod: existingBill.payment_method,
+                            items: billItems,
+                            sessionDetails: existingBill.session_details || {
+                                guestName: userData.name || 'Guest',
+                                tableName: existingBill.table_name || userData.name || 'N/A',
+                                numGuests: 1,
+                                orderCount: billedOrders.length,
+                                startedAt: existingBill.created_at
+                            }
+                        }
+                    })
+                }
+            }
+
             return NextResponse.json(
-                { success: false, error: 'No unbilled orders found' },
+                { success: false, error: 'No orders found' },
                 { status: 400 }
             )
         }

@@ -46,33 +46,94 @@ export async function POST(request: NextRequest) {
             .single()
 
         if (sessionError || !session) {
+            console.error('Session fetch error:', sessionError)
             return NextResponse.json(
                 { success: false, error: 'Session not found' },
                 { status: 404 }
             )
         }
 
-        const orders = session.orders || []
+        let orders = session.orders || []
 
         if (orders.length === 0) {
-            return NextResponse.json(
-                { success: false, error: 'No orders found in this session' },
-                { status: 400 }
-            )
+            console.error('No orders found for session:', sessionId, 'Session data:', session)
+            
+            // Try a direct query as backup
+            const { data: directOrders, error: ordersError } = await supabase
+                .from('orders')
+                .select(`
+                    id,
+                    total,
+                    discount_amount,
+                    status,
+                    created_at,
+                    order_items (
+                        id,
+                        quantity,
+                        price,
+                        menu_items (name)
+                    )
+                `)
+                .eq('session_id', sessionId)
+            
+            console.log('Direct orders query result:', directOrders, 'error:', ordersError)
+            
+            if (directOrders && directOrders.length > 0) {
+                // Use the direct query results
+                orders = directOrders
+            } else {
+                return NextResponse.json(
+                    { 
+                        success: false, 
+                        error: 'No orders found in this session. Please ensure orders are placed before requesting a bill.',
+                        debug: {
+                            sessionId,
+                            sessionStatus: session.status,
+                            directOrdersCount: directOrders?.length || 0
+                        }
+                    },
+                    { status: 400 }
+                )
+            }
         }
 
-        // 2. Check if session already has a bill
+        // 2. Check if session already has a bill — return full bill data
         const { data: existingBill } = await supabase
             .from('bills')
-            .select('id, bill_number')
+            .select(`
+                *,
+                bill_items(*)
+            `)
             .eq('session_id', sessionId)
             .single()
 
         if (existingBill) {
+            const billItems = (existingBill.bill_items || []).map((item: any) => ({
+                item_name: item.item_name || item.name || 'Item',
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.subtotal || (item.quantity * item.price)
+            }))
+
             return NextResponse.json({
                 success: true,
                 message: 'Bill already exists for this session',
-                bill: { id: existingBill.id, billNumber: existingBill.bill_number }
+                bill: {
+                    id: existingBill.id,
+                    billNumber: existingBill.bill_number,
+                    itemsTotal: existingBill.items_total,
+                    discountAmount: existingBill.discount_amount || 0,
+                    finalTotal: existingBill.final_total,
+                    paymentMethod: existingBill.payment_method,
+                    items: billItems,
+                    sessionDetails: existingBill.session_details || {
+                        guestName: session.guest_name || 'Guest',
+                        tableName: session.table_name || 'N/A',
+                        numGuests: session.num_guests || 1,
+                        orderCount: orders.length,
+                        startedAt: session.started_at
+                    }
+                }
             })
         }
 

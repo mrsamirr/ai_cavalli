@@ -17,17 +17,22 @@ interface CartContextType {
     updateQuantity: (itemId: string, delta: number) => void
     clearCart: () => void
     total: number
+    editingOrderId: string | null
+    setEditingOrderId: (orderId: string | null) => void
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([])
+    const [editingOrderId, setEditingOrderId] = useState<string | null>(null)
 
     // Load from local storage on mount
     useEffect(() => {
         const saved = localStorage.getItem('cart')
         if (saved) setItems(JSON.parse(saved))
+        const savedEditingId = localStorage.getItem('editing_order_id')
+        if (savedEditingId) setEditingOrderId(savedEditingId)
     }, [])
 
     // Save to local storage on change
@@ -62,7 +67,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }).filter(i => i.quantity > 0))
     }, [])
 
-    const clearCart = useCallback(() => setItems([]), [])
+    const clearCart = useCallback(() => {
+        setItems([])
+        setEditingOrderId(null)
+        localStorage.removeItem('editing_order_id')
+    }, [])
+
+    const handleSetEditingOrderId = useCallback((orderId: string | null) => {
+        setEditingOrderId(orderId)
+        if (orderId) {
+            localStorage.setItem('editing_order_id', orderId)
+        } else {
+            localStorage.removeItem('editing_order_id')
+        }
+    }, [])
 
     const total = useMemo(() => {
         return items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -74,8 +92,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         updateQuantity,
         clearCart,
-        total
-    }), [items, addToCart, removeFromCart, updateQuantity, clearCart, total])
+        total,
+        editingOrderId,
+        setEditingOrderId: handleSetEditingOrderId,
+    }), [items, addToCart, removeFromCart, updateQuantity, clearCart, total, editingOrderId, handleSetEditingOrderId])
 
     return (
         <CartContext.Provider value={value}>
